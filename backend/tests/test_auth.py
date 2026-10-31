@@ -11,6 +11,7 @@ def test_customer_registration_success(client):
         "name": "Alice Tester",
         "company_name": "Testing Inc",
         "phone": "+91 9999988888",
+        "role": "admin",
     }
     response = client.post("/api/auth/register", json=payload)
     assert response.status_code == 201

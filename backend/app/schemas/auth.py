@@ -61,6 +61,8 @@ class UserResponse(BaseModel):
     role: str
     is_active: bool
     customer_id: Optional[int] = None
+    name: Optional[str] = None
+    company_name: Optional[str] = None
     created_at: datetime
 
     class Config:

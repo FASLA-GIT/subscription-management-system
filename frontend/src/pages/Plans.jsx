@@ -1,1 +1,380 @@
-import React, { useState, useEffect } from 'react';\nimport {\n  Layers,\n  Plus,\n  Calendar,\n  Check,\n  X,\n  Clock,\n  Tag,\n  ShieldCheck,\n  PauseCircle,\n  RefreshCw\n} from 'lucide-react';\nimport { PlanService } from '../services/api';\nimport { useAuth } from '../context/AuthContext';\nimport { useAccessibility } from '../context/AccessibilityContext';\nimport Card from '../components/common/Card';\nimport Modal from '../components/common/Modal';\n\nexport default function Plans() {\n  const { isStaff } = useAuth();\n  const { announce } = useAccessibility();\n  const [plans, setPlans] = useState([]);\n  const [isModalOpen, setIsModalOpen] = useState(false);\n  const [loading, setLoading] = useState(true);\n\n  const [formData, setFormData] = useState({\n    name: '',\n    price: '',\n    billing_frequency: 'monthly',\n    min_quantity: 1,\n    start_date: new Date().toISOString().split('T')[0],\n    end_date: '2027-12-31',\n    auto_closure: false,\n    early_closure_allowed: true,\n    pause_allowed: true,\n    renewal_allowed: true,\n  });\n\n  useEffect(() => {\n    loadPlans();\n  }, []);\n\n  async function loadPlans() {\n    try {\n      setLoading(true);\n      const data = await PlanService.getAll();\n      setPlans(data);\n    } catch (err) {\n      console.error(err);\n    } finally {\n      setLoading(false);\n    }\n  }\n\n  const handleSubmit = async (e) => {\n    e.preventDefault();\n    if (!formData.name.trim() || !formData.price) return;\n\n    await PlanService.create({\n      ...formData,\n      price: Number(formData.price),\n      min_quantity: Number(formData.min_quantity || 1),\n    });\n\n    setIsModalOpen(false);\n    announce(`Created plan ${formData.name}`);\n    setFormData({\n      name: '',\n      price: '',\n      billing_frequency: 'monthly',\n      min_quantity: 1,\n      start_date: new Date().toISOString().split('T')[0],\n      end_date: '2027-12-31',\n      auto_closure: false,\n      early_closure_allowed: true,\n      pause_allowed: true,\n      renewal_allowed: true,\n    });\n    loadPlans();\n  };\n\n  const frequencyBadges = {\n    daily: 'bg-indigo-100 text-indigo-800',\n    weekly: 'bg-cyan-100 text-cyan-800',\n    monthly: 'bg-emerald-100 text-emerald-800',\n    yearly: 'bg-purple-100 text-purple-800',\n  };\n\n  return (\n    <div className="space-y-6 font-sans">\n      {/* Header */}\n      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">\n        <div>\n          <h1 className="text-2xl font-black text-[#111D35] tracking-tight">\n            Subscription Plan Management\n          </h1>\n          <p className="text-xs text-[#64748B] mt-1">\n            Configure recurring billing cadences, pause/renewal policies, and lifecycle rules.\n          </p>\n        </div>\n\n        {isStaff && (\n          <button\n            type="button"\n            onClick={() => setIsModalOpen(true)}\n            aria-label="Create a new subscription plan"\n            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl bg-[#1677F8] hover:bg-[#0A5CD6] text-white shadow-sm hover:shadow-[#1677F8]/25 transition-all active:scale-[0.98]"\n          >\n            <Plus className="w-4 h-4" aria-hidden="true" />\n            <span>Create New Plan</span>\n          </button>\n        )}\n      </div>\n\n      {/* Plans Grid */}\n      {loading ? (\n        <div className="text-center py-12 text-xs font-semibold text-[#64748B]">Loading plans...</div>\n      ) : plans.length === 0 ? (\n        <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-[#E2E8F0] p-8">\n          <Layers className="w-10 h-10 text-slate-300 mx-auto mb-2" />\n          <p className="text-sm font-bold text-[#111D35]">No subscription plans available</p>\n          <p className="text-xs text-[#64748B] mt-1">Click 'Create New Plan' to define billing frequencies.</p>\n        </div>\n      ) : (\n        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">\n          {plans.map((plan) => (\n            <Card key={plan.id} className="flex flex-col justify-between hover:shadow-glow-sm relative overflow-hidden">\n              <div className="space-y-4">\n                <div className="flex items-start justify-between">\n                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${frequencyBadges[plan.billing_frequency] || 'bg-slate-100 text-slate-800'}`}>\n                    {plan.billing_frequency}\n                  </span>\n                  <div className="text-right">\n                    <p className="text-2xl font-black text-[#111D35]">\n                      ₹{Number(plan.price).toLocaleString('en-IN')}\n                    </p>\n                    <p className="text-[10px] text-[#64748B]">per {plan.billing_frequency}</p>\n                  </div>\n                </div>\n\n                <div>\n                  <h2 className="text-base font-bold text-[#111D35]">{plan.name}</h2>\n                  <p className="text-xs text-[#64748B] mt-0.5">\n                    Min Quantity: <span className="font-semibold text-[#111D35]">{plan.min_quantity} seat(s)</span>\n                  </p>\n                </div>\n\n                {/* Validity Period */}\n                <div className="flex items-center gap-2 text-xs text-[#64748B] bg-[#F5F7FB] p-2.5 rounded-xl border border-[#E2E8F0]">\n                  <Calendar className="w-4 h-4 text-[#1677F8] flex-shrink-0" />\n                  <span>Valid: {plan.start_date} to {plan.end_date}</span>\n                </div>\n\n                {/* Configurable Lifecycle Rules */}\n                <div className="space-y-1.5 pt-2 border-t border-slate-100 text-xs">\n                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">\n                    Configured Lifecycle Rules:\n                  </p>\n\n                  <div className="grid grid-cols-2 gap-2 text-[11px]">\n                    <div className="flex items-center gap-1.5">\n                      {plan.renewal_allowed ? (\n                        <Check className="w-3.5 h-3.5 text-emerald-600" />\n                      ) : (\n                        <X className="w-3.5 h-3.5 text-slate-400" />\n                      )}\n                      <span className={plan.renewal_allowed ? 'text-slate-800 font-medium' : 'text-slate-400'}>\n                        Auto-Renewal\n                      </span>\n                    </div>\n\n                    <div className="flex items-center gap-1.5">\n                      {plan.pause_allowed ? (\n                        <Check className="w-3.5 h-3.5 text-emerald-600" />\n                      ) : (\n                        <X className="w-3.5 h-3.5 text-slate-400" />\n                      )}\n                      <span className={plan.pause_allowed ? 'text-slate-800 font-medium' : 'text-slate-400'}>\n                        Pause Allowed\n                      </span>\n                    </div>\n\n                    <div className="flex items-center gap-1.5">\n                      {plan.early_closure_allowed ? (\n                        <Check className="w-3.5 h-3.5 text-emerald-600" />\n                      ) : (\n                        <X className="w-3.5 h-3.5 text-slate-400" />\n                      )}\n                      <span className={plan.early_closure_allowed ? 'text-slate-800 font-medium' : 'text-slate-400'}>\n                        Early Closure\n                      </span>\n                    </div>\n\n                    <div className="flex items-center gap-1.5">\n                      {plan.auto_closure ? (\n                        <Check className="w-3.5 h-3.5 text-amber-600" />\n                      ) : (\n                        <X className="w-3.5 h-3.5 text-slate-400" />\n                      )}\n                      <span className={plan.auto_closure ? 'text-amber-800 font-medium' : 'text-slate-400'}>\n                        Auto Close on End\n                      </span>\n                    </div>\n                  </div>\n                </div>\n              </div>\n            </Card>\n          ))}\n        </div>\n      )}\n\n      {/* Create Plan Modal */}\n      <Modal\n        isOpen={isModalOpen}\n        onClose={() => setIsModalOpen(false)}\n        title="Create Subscription Plan"\n        subtitle="Define recurring billing frequency, price and lifecycle constraints"\n      >\n        <form onSubmit={handleSubmit} className="space-y-4">\n          <div>\n            <label htmlFor="plan-name" className="block text-xs font-bold text-slate-700 mb-1">\n              Plan Name *\n            </label>\n            <input\n              id="plan-name"\n              type="text"\n              required\n              placeholder="e.g. Enterprise Annual Plan"\n              value={formData.name}\n              onChange={(e) => setFormData({ ...formData, name: e.target.value })}\n              className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus-visible:ring-2 focus-visible:ring-sky-500"\n            />\n          </div>\n\n          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">\n            <div>\n              <label htmlFor="plan-price" className="block text-xs font-bold text-slate-700 mb-1">\n                Plan Price (₹) *\n              </label>\n              <input\n                id="plan-price"\n                type="number"\n                min="0"\n                step="0.01"\n                required\n                placeholder="3000"\n                value={formData.price}\n                onChange={(e) => setFormData({ ...formData, price: e.target.value })}\n                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus-visible:ring-2 focus-visible:ring-sky-500"\n              />\n            </div>\n\n            <div>\n              <label htmlFor="plan-frequency" className="block text-xs font-bold text-slate-700 mb-1">\n                Billing Frequency *\n              </label>\n              <select\n                id="plan-frequency"\n                value={formData.billing_frequency}\n                onChange={(e) => setFormData({ ...formData, billing_frequency: e.target.value })}\n                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus-visible:ring-2 focus-visible:ring-sky-500"\n              >\n                <option value="daily">Daily</option>\n                <option value="weekly">Weekly</option>\n                <option value="monthly">Monthly</option>\n                <option value="yearly">Yearly</option>\n              </select>\n            </div>\n\n            <div>\n              <label htmlFor="plan-min-qty" className="block text-xs font-bold text-slate-700 mb-1">\n                Min Quantity\n              </label>\n              <input\n                id="plan-min-qty"\n                type="number"\n                min="1"\n                value={formData.min_quantity}\n                onChange={(e) => setFormData({ ...formData, min_quantity: e.target.value })}\n                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus-visible:ring-2 focus-visible:ring-sky-500"\n              />\n            </div>\n          </div>\n\n          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">\n            <div>\n              <label htmlFor="plan-start-date" className="block text-xs font-bold text-slate-700 mb-1">\n                Availability Start Date\n              </label>\n              <input\n                id="plan-start-date"\n                type="date"\n                value={formData.start_date}\n                onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}\n                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus-visible:ring-2 focus-visible:ring-sky-500"\n              />\n            </div>\n            <div>\n              <label htmlFor="plan-end-date" className="block text-xs font-bold text-slate-700 mb-1">\n                Availability End Date\n              </label>\n              <input\n                id="plan-end-date"\n                type="date"\n                value={formData.end_date}\n                onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}\n                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus-visible:ring-2 focus-visible:ring-sky-500"\n              />\n            </div>\n          </div>\n\n          {/* Lifecycle Toggles */}\n          <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">\n            <p className="text-xs font-bold text-slate-800">Subscription Lifecycle Rules</p>\n            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">\n              <label className="flex items-center gap-2 cursor-pointer">\n                <input\n                  type="checkbox"\n                  checked={formData.renewal_allowed}\n                  onChange={(e) => setFormData({ ...formData, renewal_allowed: e.target.checked })}\n                  className="rounded text-sky-600 focus-visible:ring-2 focus-visible:ring-sky-500"\n                />\n                <span className="text-slate-700">Allow Renewal</span>\n              </label>\n\n              <label className="flex items-center gap-2 cursor-pointer">\n                <input\n                  type="checkbox"\n                  checked={formData.pause_allowed}\n                  onChange={(e) => setFormData({ ...formData, pause_allowed: e.target.checked })}\n                  className="rounded text-sky-600 focus-visible:ring-2 focus-visible:ring-sky-500"\n                />\n                <span className="text-slate-700">Allow Pause</span>\n              </label>\n\n              <label className="flex items-center gap-2 cursor-pointer">\n                <input\n                  type="checkbox"\n                  checked={formData.early_closure_allowed}\n                  onChange={(e) => setFormData({ ...formData, early_closure_allowed: e.target.checked })}\n                  className="rounded text-sky-600 focus-visible:ring-2 focus-visible:ring-sky-500"\n                />\n                <span className="text-slate-700">Allow Early Closure</span>\n              </label>\n\n              <label className="flex items-center gap-2 cursor-pointer">\n                <input\n                  type="checkbox"\n                  checked={formData.auto_closure}\n                  onChange={(e) => setFormData({ ...formData, auto_closure: e.target.checked })}\n                  className="rounded text-sky-600 focus-visible:ring-2 focus-visible:ring-sky-500"\n                />\n                <span className="text-slate-700">Auto Close When Ended</span>\n              </label>\n            </div>\n          </div>\n\n          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">\n            <button\n              type="button"\n              onClick={() => setIsModalOpen(false)}\n              className="px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-lg"\n            >\n              Cancel\n            </button>\n            <button\n              type="submit"\n              className="px-4 py-2 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-lg shadow-xs"\n            >\n              Save Plan\n            </button>\n          </div>\n        </form>\n      </Modal>\n    </div>\n  );\n}\n\n\n
+import React, { useState, useEffect } from 'react';
+import {
+  Layers,
+  Plus,
+  Calendar,
+  Check,
+  X,
+  Clock,
+  Tag,
+  ShieldCheck,
+  PauseCircle,
+  RefreshCw
+} from 'lucide-react';
+import { PlanService } from '../services/api';
+import { useAuth } from '../context/AuthContext';
+import { useAccessibility } from '../context/AccessibilityContext';
+import Card from '../components/common/Card';
+import Modal from '../components/common/Modal';
+
+export default function Plans() {
+  const { isAdmin } = useAuth();
+  const { announce } = useAccessibility();
+  const [plans, setPlans] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const [formData, setFormData] = useState({
+    name: '',
+    price: '',
+    billing_frequency: 'monthly',
+    min_quantity: 1,
+    start_date: new Date().toISOString().split('T')[0],
+    end_date: '2027-12-31',
+    auto_closure: false,
+    early_closure_allowed: true,
+    pause_allowed: true,
+    renewal_allowed: true,
+  });
+
+  useEffect(() => {
+    loadPlans();
+  }, []);
+
+  async function loadPlans() {
+    try {
+      setLoading(true);
+      const data = await PlanService.getAll();
+      setPlans(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!formData.name.trim() || !formData.price) return;
+
+    await PlanService.create({
+      ...formData,
+      price: Number(formData.price),
+      min_quantity: Number(formData.min_quantity || 1),
+    });
+
+    setIsModalOpen(false);
+    announce(`Created plan ${formData.name}`);
+    setFormData({
+      name: '',
+      price: '',
+      billing_frequency: 'monthly',
+      min_quantity: 1,
+      start_date: new Date().toISOString().split('T')[0],
+      end_date: '2027-12-31',
+      auto_closure: false,
+      early_closure_allowed: true,
+      pause_allowed: true,
+      renewal_allowed: true,
+    });
+    loadPlans();
+  };
+
+  const frequencyBadges = {
+    daily: 'bg-indigo-100 text-indigo-800',
+    weekly: 'bg-cyan-100 text-cyan-800',
+    monthly: 'bg-emerald-100 text-emerald-800',
+    yearly: 'bg-purple-100 text-purple-800',
+  };
+
+  return (
+    <div className="space-y-6 font-sans">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-black text-[#111D35] tracking-tight">
+            Subscription Plan Management
+          </h1>
+          <p className="text-xs text-[#64748B] mt-1">
+            Configure recurring billing cadences, pause/renewal policies, and lifecycle rules.
+          </p>
+        </div>
+
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={() => setIsModalOpen(true)}
+            aria-label="Create a new subscription plan"
+            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl bg-[#1677F8] hover:bg-[#0A5CD6] text-white shadow-sm hover:shadow-[#1677F8]/25 transition-all active:scale-[0.98]"
+          >
+            <Plus className="w-4 h-4" aria-hidden="true" />
+            <span>Create New Plan</span>
+          </button>
+        )}
+      </div>
+
+      {/* Plans Grid */}
+      {loading ? (
+        <div className="text-center py-12 text-xs font-semibold text-[#64748B]">Loading plans...</div>
+      ) : plans.length === 0 ? (
+        <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-[#E2E8F0] p-8">
+          <Layers className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+          <p className="text-sm font-bold text-[#111D35]">No subscription plans available</p>
+          <p className="text-xs text-[#64748B] mt-1">Click 'Create New Plan' to define billing frequencies.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {plans.map((plan) => (
+            <Card key={plan.id} className="flex flex-col justify-between hover:shadow-glow-sm relative overflow-hidden">
+              <div className="space-y-4">
+                <div className="flex items-start justify-between">
+                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${frequencyBadges[plan.billing_frequency] || 'bg-slate-100 text-slate-800'}`}>
+                    {plan.billing_frequency}
+                  </span>
+                  <div className="text-right">
+                    <p className="text-2xl font-black text-[#111D35]">
+                      ₹{Number(plan.price).toLocaleString('en-IN')}
+                    </p>
+                    <p className="text-[10px] text-[#64748B]">per {plan.billing_frequency}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <h2 className="text-base font-bold text-[#111D35]">{plan.name}</h2>
+                  <p className="text-xs text-[#64748B] mt-0.5">
+                    Min Quantity: <span className="font-semibold text-[#111D35]">{plan.min_quantity} seat(s)</span>
+                  </p>
+                </div>
+
+                {/* Validity Period */}
+                <div className="flex items-center gap-2 text-xs text-[#64748B] bg-[#F5F7FB] p-2.5 rounded-xl border border-[#E2E8F0]">
+                  <Calendar className="w-4 h-4 text-[#1677F8] flex-shrink-0" />
+                  <span>Valid: {plan.start_date} to {plan.end_date}</span>
+                </div>
+
+                {/* Configurable Lifecycle Rules */}
+                <div className="space-y-1.5 pt-2 border-t border-slate-100 text-xs">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                    Configured Lifecycle Rules:
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-2 text-[11px]">
+                    <div className="flex items-center gap-1.5">
+                      {plan.renewal_allowed ? (
+                        <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      ) : (
+                        <X className="w-3.5 h-3.5 text-slate-400" />
+                      )}
+                      <span className={plan.renewal_allowed ? 'text-slate-800 font-medium' : 'text-slate-400'}>
+                        Auto-Renewal
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      {plan.pause_allowed ? (
+                        <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      ) : (
+                        <X className="w-3.5 h-3.5 text-slate-400" />
+                      )}
+                      <span className={plan.pause_allowed ? 'text-slate-800 font-medium' : 'text-slate-400'}>
+                        Pause Allowed
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      {plan.early_closure_allowed ? (
+                        <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      ) : (
+                        <X className="w-3.5 h-3.5 text-slate-400" />
+                      )}
+                      <span className={plan.early_closure_allowed ? 'text-slate-800 font-medium' : 'text-slate-400'}>
+                        Early Closure
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      {plan.auto_closure ? (
+                        <Check className="w-3.5 h-3.5 text-amber-600" />
+                      ) : (
+                        <X className="w-3.5 h-3.5 text-slate-400" />
+                      )}
+                      <span className={plan.auto_closure ? 'text-amber-800 font-medium' : 'text-slate-400'}>
+                        Auto Close on End
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Create Plan Modal */}
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title="Create Subscription Plan"
+        subtitle="Define recurring billing frequency, price and lifecycle constraints"
+      >
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="plan-name" className="block text-xs font-bold text-slate-700 mb-1">
+              Plan Name *
+            </label>
+            <input
+              id="plan-name"
+              type="text"
+              required
+              placeholder="e.g. Enterprise Annual Plan"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus-visible:ring-2 focus-visible:ring-sky-500"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label htmlFor="plan-price" className="block text-xs font-bold text-slate-700 mb-1">
+                Plan Price (₹) *
+              </label>
+              <input
+                id="plan-price"
+                type="number"
+                min="0"
+                step="0.01"
+                required
+                placeholder="3000"
+                value={formData.price}
+                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus-visible:ring-2 focus-visible:ring-sky-500"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="plan-frequency" className="block text-xs font-bold text-slate-700 mb-1">
+                Billing Frequency *
+              </label>
+              <select
+                id="plan-frequency"
+                value={formData.billing_frequency}
+                onChange={(e) => setFormData({ ...formData, billing_frequency: e.target.value })}
+                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus-visible:ring-2 focus-visible:ring-sky-500"
+              >
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+                <option value="yearly">Yearly</option>
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="plan-min-qty" className="block text-xs font-bold text-slate-700 mb-1">
+                Min Quantity
+              </label>
+              <input
+                id="plan-min-qty"
+                type="number"
+                min="1"
+                value={formData.min_quantity}
+                onChange={(e) => setFormData({ ...formData, min_quantity: e.target.value })}
+                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus-visible:ring-2 focus-visible:ring-sky-500"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="plan-start-date" className="block text-xs font-bold text-slate-700 mb-1">
+                Availability Start Date
+              </label>
+              <input
+                id="plan-start-date"
+                type="date"
+                value={formData.start_date}
+                onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus-visible:ring-2 focus-visible:ring-sky-500"
+              />
+            </div>
+            <div>
+              <label htmlFor="plan-end-date" className="block text-xs font-bold text-slate-700 mb-1">
+                Availability End Date
+              </label>
+              <input
+                id="plan-end-date"
+                type="date"
+                value={formData.end_date}
+                onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus-visible:ring-2 focus-visible:ring-sky-500"
+              />
+            </div>
+          </div>
+
+          {/* Lifecycle Toggles */}
+          <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
+            <p className="text-xs font-bold text-slate-800">Subscription Lifecycle Rules</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.renewal_allowed}
+                  onChange={(e) => setFormData({ ...formData, renewal_allowed: e.target.checked })}
+                  className="rounded text-sky-600 focus-visible:ring-2 focus-visible:ring-sky-500"
+                />
+                <span className="text-slate-700">Allow Renewal</span>
+              </label>
+
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.pause_allowed}
+                  onChange={(e) => setFormData({ ...formData, pause_allowed: e.target.checked })}
+                  className="rounded text-sky-600 focus-visible:ring-2 focus-visible:ring-sky-500"
+                />
+                <span className="text-slate-700">Allow Pause</span>
+              </label>
+
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.early_closure_allowed}
+                  onChange={(e) => setFormData({ ...formData, early_closure_allowed: e.target.checked })}
+                  className="rounded text-sky-600 focus-visible:ring-2 focus-visible:ring-sky-500"
+                />
+                <span className="text-slate-700">Allow Early Closure</span>
+              </label>
+
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.auto_closure}
+                  onChange={(e) => setFormData({ ...formData, auto_closure: e.target.checked })}
+                  className="rounded text-sky-600 focus-visible:ring-2 focus-visible:ring-sky-500"
+                />
+                <span className="text-slate-700">Auto Close When Ended</span>
+              </label>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(false)}
+              className="px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-lg"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-lg shadow-xs"
+            >
+              Save Plan
+            </button>
+          </div>
+        </form>
+      </Modal>
+    </div>
+  );
+}
+
+

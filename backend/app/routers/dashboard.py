@@ -1,6 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 from typing import List
+
 from fastapi import APIRouter, Depends
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -12,67 +13,63 @@ from app.models.invoice import Invoice
 from app.models.payment import Payment
 from app.models.subscription import Subscription
 from app.models.user import User
-from app.schemas.finance import DashboardSummaryResponse, InvoiceResponse, RevenueChartPoint
+from app.schemas.finance import DashboardSummaryResponse, RevenueChartPoint
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard & Analytics"])
+
+
+def _customer_scope(current_user: User):
+    return current_user.customer.id if current_user.role == "customer" and current_user.customer else None
 
 
 @router.get("/summary", response_model=DashboardSummaryResponse)
 def get_dashboard_summary(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_staff_or_admin),
+    current_user: User = Depends(get_current_active_user),
 ):
-    """Aggregate financial metrics and business indicators calculated from real DB data."""
+    """Aggregate dashboard metrics, scoped to the authenticated customer when applicable."""
+    customer_id = _customer_scope(current_user)
     now_dt = datetime.utcnow()
 
-    # Total active subscriptions
-    active_subs = (
-        db.query(func.count(Subscription.id))
-        .filter(Subscription.status == "active")
-        .scalar()
-        or 0
+    subscriptions = db.query(Subscription)
+    invoices = db.query(Invoice)
+    customers = db.query(Customer)
+    if current_user.role == "customer":
+        if customer_id is None:
+            return DashboardSummaryResponse(
+                active_subscriptions=0, total_revenue=Decimal("0"),
+                outstanding_amount=Decimal("0"), overdue_invoices_count=0,
+                total_customers=0, total_invoices=0, recent_invoices=[],
+            )
+        subscriptions = subscriptions.filter(Subscription.customer_id == customer_id)
+        invoices = invoices.filter(Invoice.customer_id == customer_id)
+        customers = customers.filter(Customer.id == customer_id)
+
+    active_subs = subscriptions.filter(Subscription.status == "active").count()
+    revenue = (
+        db.query(func.sum(Payment.amount))
+        .join(Invoice, Payment.invoice_id == Invoice.id)
     )
+    if current_user.role == "customer":
+        revenue = revenue.filter(Invoice.customer_id == customer_id)
 
-    # Total revenue received (sum of all recorded payments)
-    total_rev = db.query(func.sum(Payment.amount)).scalar() or Decimal("0.00")
-
-    # Outstanding balance across unpaid/partially paid invoices
-    outstanding = (
-        db.query(func.sum(Invoice.balance_due))
-        .filter(Invoice.status != "cancelled")
-        .scalar()
-        or Decimal("0.00")
-    )
-
-    # Overdue invoices count (unpaid & due_date < now)
-    overdue_count = (
-        db.query(func.count(Invoice.id))
-        .filter(
-            Invoice.status != "paid",
-            Invoice.status != "cancelled",
-            Invoice.due_date < now_dt,
-        )
-        .scalar()
-        or 0
-    )
-
-    # Total registered customers
-    total_customers = db.query(func.count(Customer.id)).scalar() or 0
-
-    # Recent 5 invoices
-    recent_invoices = (
-        db.query(Invoice)
-        .order_by(Invoice.id.desc())
-        .limit(5)
-        .all()
-    )
+    outstanding = invoices.filter(Invoice.status != "cancelled").with_entities(
+        func.sum(Invoice.balance_due)
+    ).scalar() or Decimal("0.00")
+    overdue_count = invoices.filter(
+        Invoice.status.notin_(["paid", "cancelled"]),
+        Invoice.balance_due > Decimal("0.00"),
+        Invoice.due_date < now_dt,
+    ).count()
+    recent_invoices = invoices.order_by(Invoice.id.desc()).limit(5).all()
 
     return DashboardSummaryResponse(
         active_subscriptions=active_subs,
-        total_revenue=Decimal(str(total_rev)),
-        outstanding_amount=Decimal(str(outstanding)),
+        total_revenue=revenue.scalar() or Decimal("0.00"),
+        outstanding_amount=outstanding,
         overdue_invoices_count=overdue_count,
-        total_customers=total_customers,
+        total_customers=customers.count(),
+        total_invoices=invoices.count(),
         recent_invoices=recent_invoices,
     )
 
@@ -80,31 +77,26 @@ def get_dashboard_summary(
 @router.get("/revenue", response_model=List[RevenueChartPoint])
 def get_monthly_revenue_chart(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_staff_or_admin),
+    current_user: User = Depends(get_current_active_user),
 ):
-    """Return monthly aggregated revenue for frontend Recharts visualization."""
-    payments = db.query(Payment).order_by(Payment.payment_date.asc()).all()
+    """Return recorded payments by month, scoped to the customer's own invoices."""
+    query = db.query(Payment).join(Invoice, Payment.invoice_id == Invoice.id)
+    if current_user.role == "customer":
+        customer_id = _customer_scope(current_user)
+        if customer_id is None:
+            return []
+        query = query.filter(Invoice.customer_id == customer_id)
 
-    # Aggregate by Month YYYY-MM
     monthly_data = {}
-    for p in payments:
-        month_key = p.payment_date.strftime("%b %Y")
-        monthly_data[month_key] = monthly_data.get(month_key, Decimal("0.00")) + Decimal(str(p.amount))
-
-    # If no payments yet, provide empty or current month
-    if not monthly_data:
-        curr_month = datetime.utcnow().strftime("%b %Y")
-        return [RevenueChartPoint(month=curr_month, revenue=Decimal("0.00"))]
-
-    return [
-        RevenueChartPoint(month=m, revenue=val)
-        for m, val in monthly_data.items()
-    ]
+    for payment in query.order_by(Payment.payment_date.asc()).all():
+        month_key = payment.payment_date.strftime("%b %Y")
+        monthly_data[month_key] = monthly_data.get(month_key, Decimal("0.00")) + Decimal(str(payment.amount))
+    return [RevenueChartPoint(month=month, revenue=amount) for month, amount in monthly_data.items()]
 
 
 @router.get("/overdue")
 def get_overdue_invoices(db: Session = Depends(get_db), current_user: User = Depends(require_staff_or_admin)):
-    """Return overdue invoices and their current outstanding balances."""
+    """Return overdue invoices and their current outstanding balances to staff and admins."""
     today = datetime.utcnow().date()
     invoices = db.query(Invoice).filter(
         Invoice.status.notin_(["paid", "cancelled"]), Invoice.balance_due > Decimal("0.00")
@@ -123,6 +115,8 @@ def get_overdue_invoices(db: Session = Depends(get_db), current_user: User = Dep
                 "outstanding_amount": str(invoice.balance_due),
                 "status": "overdue" if invoice.status != "partially_paid" else "partially_paid",
             })
-    return {"total_overdue_count": len(overdue),
-            "total_overdue_amount": str(sum((Decimal(i["outstanding_amount"]) for i in overdue), Decimal("0.00"))),
-            "items": overdue}
+    return {
+        "total_overdue_count": len(overdue),
+        "total_overdue_amount": str(sum((Decimal(item["outstanding_amount"]) for item in overdue), Decimal("0.00"))),
+        "items": overdue,
+    }

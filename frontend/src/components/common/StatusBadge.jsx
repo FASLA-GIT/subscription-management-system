@@ -1,1 +1,94 @@
-import React from 'react';\nimport {\n  FileEdit,\n  FileText,\n  CheckCircle2,\n  CheckCircle,\n  PauseCircle,\n  XCircle,\n  BadgeCheck,\n  Clock,\n  AlertTriangle\n} from 'lucide-react';\n\nexport default function StatusBadge({ status, className = '' }) {\n  const normStatus = (status || '').toLowerCase().trim();\n\n  const configs = {\n    draft: {\n      label: 'Draft',\n      icon: FileEdit,\n      bg: 'bg-slate-100 text-slate-700 border-slate-200',\n      ariaLabel: 'Status: Draft',\n    },\n    quotation: {\n      label: 'Quotation',\n      icon: FileText,\n      bg: 'bg-purple-50 text-purple-700 border-purple-200',\n      ariaLabel: 'Status: Quotation',\n    },\n    confirmed: {\n      label: 'Confirmed',\n      icon: CheckCircle2,\n      bg: 'bg-[#EAF3FF] text-[#1677F8] border-[#1677F8]/25',\n      ariaLabel: 'Status: Confirmed',\n    },\n    active: {\n      label: 'Active',\n      icon: CheckCircle,\n      bg: 'bg-emerald-50 text-[#059669] border-emerald-200 font-semibold',\n      ariaLabel: 'Status: Active',\n    },\n    paused: {\n      label: 'Paused',\n      icon: PauseCircle,\n      bg: 'bg-amber-50 text-[#D97706] border-amber-200',\n      ariaLabel: 'Status: Paused',\n    },\n    closed: {\n      label: 'Closed',\n      icon: XCircle,\n      bg: 'bg-slate-100 text-slate-500 border-slate-200',\n      ariaLabel: 'Status: Closed',\n    },\n    paid: {\n      label: 'Paid',\n      icon: BadgeCheck,\n      bg: 'bg-emerald-50 text-[#059669] border-emerald-200 font-semibold',\n      ariaLabel: 'Payment Status: Fully Paid',\n    },\n    'partially paid': {\n      label: 'Partially Paid',\n      icon: Clock,\n      bg: 'bg-amber-50 text-[#D97706] border-amber-200',\n      ariaLabel: 'Payment Status: Partially Paid',\n    },\n    overdue: {\n      label: 'Overdue',\n      icon: AlertTriangle,\n      bg: 'bg-rose-50 text-[#DC2626] border-rose-200 font-semibold',\n      ariaLabel: 'Payment Status: Overdue',\n    },\n  };\n\n  const conf = configs[normStatus] || {\n    label: status || 'Unknown',\n    icon: FileText,\n    bg: 'bg-slate-100 text-slate-700 border-slate-200',\n    ariaLabel: `Status: ${status}`,\n  };\n\n  const Icon = conf.icon;\n\n  return (\n    <span\n      role="status"\n      aria-label={conf.ariaLabel}\n      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] border font-medium ${conf.bg} ${className}`}\n    >\n      <Icon className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />\n      <span>{conf.label}</span>\n    </span>\n  );\n}\n\n
+import React from 'react';
+import {
+  FileEdit,
+  FileText,
+  CheckCircle2,
+  CheckCircle,
+  PauseCircle,
+  XCircle,
+  BadgeCheck,
+  Clock,
+  AlertTriangle
+} from 'lucide-react';
+
+export default function StatusBadge({ status, className = '' }) {
+  const normStatus = (status || '').toLowerCase().trim();
+
+  const configs = {
+    draft: {
+      label: 'Draft',
+      icon: FileEdit,
+      bg: 'bg-slate-100 text-slate-700 border-slate-200',
+      ariaLabel: 'Status: Draft',
+    },
+    quotation: {
+      label: 'Quotation',
+      icon: FileText,
+      bg: 'bg-purple-50 text-purple-700 border-purple-200',
+      ariaLabel: 'Status: Quotation',
+    },
+    confirmed: {
+      label: 'Confirmed',
+      icon: CheckCircle2,
+      bg: 'bg-[#EAF3FF] text-[#1677F8] border-[#1677F8]/25',
+      ariaLabel: 'Status: Confirmed',
+    },
+    active: {
+      label: 'Active',
+      icon: CheckCircle,
+      bg: 'bg-emerald-50 text-[#059669] border-emerald-200 font-semibold',
+      ariaLabel: 'Status: Active',
+    },
+    paused: {
+      label: 'Paused',
+      icon: PauseCircle,
+      bg: 'bg-amber-50 text-[#D97706] border-amber-200',
+      ariaLabel: 'Status: Paused',
+    },
+    closed: {
+      label: 'Closed',
+      icon: XCircle,
+      bg: 'bg-slate-100 text-slate-500 border-slate-200',
+      ariaLabel: 'Status: Closed',
+    },
+    paid: {
+      label: 'Paid',
+      icon: BadgeCheck,
+      bg: 'bg-emerald-50 text-[#059669] border-emerald-200 font-semibold',
+      ariaLabel: 'Payment Status: Fully Paid',
+    },
+    'partially paid': {
+      label: 'Partially Paid',
+      icon: Clock,
+      bg: 'bg-amber-50 text-[#D97706] border-amber-200',
+      ariaLabel: 'Payment Status: Partially Paid',
+    },
+    overdue: {
+      label: 'Overdue',
+      icon: AlertTriangle,
+      bg: 'bg-rose-50 text-[#DC2626] border-rose-200 font-semibold',
+      ariaLabel: 'Payment Status: Overdue',
+    },
+  };
+
+  const conf = configs[normStatus] || {
+    label: status || 'Unknown',
+    icon: FileText,
+    bg: 'bg-slate-100 text-slate-700 border-slate-200',
+    ariaLabel: `Status: ${status}`,
+  };
+
+  const Icon = conf.icon;
+
+  return (
+    <span
+      role="status"
+      aria-label={conf.ariaLabel}
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] border font-medium ${conf.bg} ${className}`}
+    >
+      <Icon className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
+      <span>{conf.label}</span>
+    </span>
+  );
+}
+

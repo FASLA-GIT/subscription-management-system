@@ -1,1 +1,120 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';\n\nconst AuthContext = createContext(null);\n\nexport const DEFAULT_USERS = {\n  admin: {\n    id: 1,\n    name: 'Aarav Sharma',\n    email: 'admin@brightloop.com',\n    role: 'admin',\n    roleLabel: 'System Administrator',\n    title: 'Enterprise Billing Administrator',\n    avatar: 'A',\n    homeRoute: '/app',\n  },\n  staff: {\n    id: 2,\n    name: 'Priya Patel',\n    email: 'priya.staff@brightloop.com',\n    role: 'internal_staff',\n    roleLabel: 'Operations Staff',\n    title: 'Customer & Billing Specialist',\n    avatar: 'P',\n    homeRoute: '/app',\n  },\n  customer: {\n    id: 3,\n    name: 'Rahul Verma',\n    company: 'Acme Technologies Ltd',\n    email: 'rahul@acmecorp.in',\n    role: 'customer',\n    roleLabel: 'Customer Client',\n    title: 'Corporate Subscriber',\n    customerId: 1,\n    avatar: 'R',\n    homeRoute: '/app',\n  },\n};\n\nexport function validatePassword(password) {\n  const errors = [];\n  if (!password || password.length <= 8) {\n    errors.push('Password must be more than 8 characters long.');\n  }\n  if (!/[A-Z]/.test(password)) {\n    errors.push('Must contain at least one uppercase letter (A-Z).');\n  }\n  if (!/[a-z]/.test(password)) {\n    errors.push('Must contain at least one lowercase letter (a-z).');\n  }\n  if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) {\n    errors.push('Must contain at least one special character (!@#$%...).');\n  }\n  return {\n    isValid: errors.length === 0,\n    errors,\n  };\n}\n\nexport function AuthProvider({ children }) {\n  // Use sessionStorage for demo mode session state\n  const [user, setUser] = useState(() => {\n    try {\n      const saved = sessionStorage.getItem('brightloop_demo_user');\n      if (saved) {\n        return JSON.parse(saved);\n      }\n    } catch (e) {\n      // fallback\n    }\n    // Default to admin for immediate convenience in demo evaluations\n    return DEFAULT_USERS.admin;\n  });\n\n  const [token, setToken] = useState(() => {\n    return sessionStorage.getItem('brightloop_demo_token') || 'demo-jwt-token';\n  });\n\n  useEffect(() => {\n    if (user) {\n      sessionStorage.setItem('brightloop_demo_user', JSON.stringify(user));\n    } else {\n      sessionStorage.removeItem('brightloop_demo_user');\n    }\n  }, [user]);\n\n  useEffect(() => {\n    if (token) {\n      sessionStorage.setItem('brightloop_demo_token', token);\n    } else {\n      sessionStorage.removeItem('brightloop_demo_token');\n    }\n  }, [token]);\n\n  // Demo Sign-In\n  const login = async (email, password) => {\n    const cleanEmail = (email || '').trim().toLowerCase();\n\n    // Check matched predefined demo role\n    let matched = Object.values(DEFAULT_USERS).find(\n      u => u.email.toLowerCase() === cleanEmail\n    );\n\n    if (!matched) {\n      // Dynamic fallback for custom email demo\n      const role = cleanEmail.includes('admin')\n        ? 'admin'\n        : cleanEmail.includes('staff')\n        ? 'internal_staff'\n        : 'customer';\n\n      matched = {\n        id: Date.now(),\n        name: email.split('@')[0],\n        email: cleanEmail,\n        role,\n        roleLabel: role === 'admin' ? 'Administrator' : role === 'internal_staff' ? 'Staff' : 'Customer',\n        title: 'Demo Session User',\n        avatar: (email.charAt(0) || 'U').toUpperCase(),\n        homeRoute: '/app',\n      };\n    }\n\n    setUser(matched);\n    const mockToken = `demo-token-${matched.role}-${Date.now()}`;\n    setToken(mockToken);\n    return { success: true, user: matched };\n  };\n\n  const loginAsRole = (roleKey) => {\n    const matched = DEFAULT_USERS[roleKey] || DEFAULT_USERS.admin;\n    setUser(matched);\n    setToken(`demo-token-${matched.role}-${Date.now()}`);\n    return matched;\n  };\n\n  const logout = () => {\n    setUser(null);\n    setToken(null);\n    sessionStorage.removeItem('brightloop_demo_user');\n    sessionStorage.removeItem('brightloop_demo_token');\n  };\n\n  const switchRole = (roleKey) => {\n    if (DEFAULT_USERS[roleKey]) {\n      const newUser = DEFAULT_USERS[roleKey];\n      setUser(newUser);\n      setToken(`demo-token-${roleKey}-${Date.now()}`);\n      sessionStorage.setItem('brightloop_demo_user', JSON.stringify(newUser));\n    }\n  };\n\n  const isAdmin = user?.role === 'admin';\n  const isStaff = user?.role === 'internal_staff' || user?.role === 'admin';\n  const isCustomer = user?.role === 'customer';\n\n  return (\n    <AuthContext.Provider\n      value={{\n        user,\n        token,\n        login,\n        loginAsRole,\n        logout,\n        switchRole,\n        isAdmin,\n        isStaff,\n        isCustomer,\n        DEFAULT_USERS,\n      }}\n    >\n      {children}\n    </AuthContext.Provider>\n  );\n}\n\nexport function useAuth() {\n  const context = useContext(AuthContext);\n  if (!context) {\n    throw new Error('useAuth must be used within an AuthProvider');\n  }\n  return context;\n}\n\n
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { AuthService, TOKEN_STORAGE_KEY, USER_STORAGE_KEY } from '../services/api';
+
+const AuthContext = createContext(null);
+
+export function validatePassword(password) {
+  const errors = [];
+  if (!password || password.length <= 8) errors.push('Password must be more than 8 characters long.');
+  if (!/[A-Z]/.test(password || '')) errors.push('Must contain at least one uppercase letter (A-Z).');
+  if (!/[a-z]/.test(password || '')) errors.push('Must contain at least one lowercase letter (a-z).');
+  if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password || '')) errors.push('Must contain at least one special character (!@#$%...).');
+  return { isValid: errors.length === 0, errors };
+}
+
+function normalizeUser(profile) {
+  const role = profile.role === 'staff' ? 'internal_staff' : profile.role;
+  const name = profile.name || profile.email.split('@')[0];
+  const labels = { admin: 'System Administrator', internal_staff: 'Operations Staff', customer: 'Customer' };
+  return {
+    ...profile,
+    name,
+    company: profile.company_name || profile.company,
+    customerId: profile.customer_id ?? profile.customerId,
+    role,
+    roleLabel: labels[role] || role,
+    avatar: name.charAt(0).toUpperCase(),
+    homeRoute: '/app',
+  };
+}
+
+export function AuthProvider({ children }) {
+  const [token, setToken] = useState(() => localStorage.getItem(TOKEN_STORAGE_KEY));
+  const [user, setUser] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(USER_STORAGE_KEY) || 'null'); } catch { return null; }
+  });
+  const [isLoading, setIsLoading] = useState(Boolean(localStorage.getItem(TOKEN_STORAGE_KEY)));
+
+  const clearSession = () => {
+    localStorage.removeItem(TOKEN_STORAGE_KEY);
+    localStorage.removeItem(USER_STORAGE_KEY);
+    sessionStorage.removeItem('brightloop_demo_token');
+    sessionStorage.removeItem('brightloop_demo_user');
+    setToken(null);
+    setUser(null);
+  };
+
+  const acceptProfile = (profile) => {
+    const normalized = normalizeUser(profile);
+    setUser(normalized);
+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(normalized));
+    return normalized;
+  };
+
+  useEffect(() => {
+    let mounted = true;
+    const restore = async () => {
+      if (!localStorage.getItem(TOKEN_STORAGE_KEY)) {
+        setIsLoading(false);
+        return;
+      }
+      try {
+        const profile = await AuthService.me();
+        if (mounted) acceptProfile(profile);
+      } catch (error) {
+        if (mounted && error.response?.status === 401) clearSession();
+      } finally {
+        if (mounted) setIsLoading(false);
+      }
+    };
+    restore();
+    const onUnauthorized = () => clearSession();
+    window.addEventListener('brightloop:unauthorized', onUnauthorized);
+    return () => {
+      mounted = false;
+      window.removeEventListener('brightloop:unauthorized', onUnauthorized);
+    };
+  }, []);
+
+  const login = async (email, password) => {
+    const result = await AuthService.login(email, password);
+    localStorage.setItem(TOKEN_STORAGE_KEY, result.access_token);
+    setToken(result.access_token);
+    try {
+      const profile = await AuthService.me();
+      return { success: true, user: acceptProfile(profile) };
+    } catch (error) {
+      clearSession();
+      throw error;
+    }
+  };
+
+  const register = async (name, email, password) => {
+    try {
+      const result = await AuthService.register({ name, email: email.trim().toLowerCase(), password });
+      localStorage.setItem(TOKEN_STORAGE_KEY, result.access_token);
+      setToken(result.access_token);
+      const profile = await AuthService.me();
+      return { success: true, user: acceptProfile(profile) };
+    } catch (error) {
+      return { success: false, errors: [error.response?.data?.detail || error.message || 'Registration failed.'] };
+    }
+  };
+
+  const logout = clearSession;
+  const isAdmin = user?.role === 'admin';
+  const isStaff = user?.role === 'internal_staff' || user?.role === 'staff' || isAdmin;
+  const isCustomer = user?.role === 'customer';
+
+  return (
+    <AuthContext.Provider value={{ user, token, isLoading, login, register, logout, isAdmin, isStaff, isCustomer }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
+  return context;
+}

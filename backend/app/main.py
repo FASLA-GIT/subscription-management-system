@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.database import Base, SessionLocal, engine, upgrade_sqlite_schema
+from app.database import Base, engine, upgrade_sqlite_schema
 from app.models import *  # Import all models to ensure metadata is registered
 from app.routers import (
     auth_router,
@@ -17,19 +17,14 @@ from app.routers import (
     products_router,
     subscriptions_router,
 )
-from app.utils.seed_data import seed_database
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Create tables and seed data if needed
+    # Create tables and apply additive SQLite schema upgrades. Account and business
+    # records must be created through authenticated APIs or the explicit bootstrap.
     Base.metadata.create_all(bind=engine)
     upgrade_sqlite_schema()
-    db = SessionLocal()
-    try:
-        seed_database(db)
-    finally:
-        db.close()
     yield
     # Shutdown logic (if any)
 

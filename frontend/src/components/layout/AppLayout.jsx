@@ -1,1 +1,29 @@
-import React, { useState } from 'react';\nimport { Outlet } from 'react-router-dom';\nimport Navbar from './Navbar';\nimport Sidebar from './Sidebar';\n\nexport default function AppLayout() {\n  const [isMobileOpen, setIsMobileOpen] = useState(false);\n\n  return (\n    <div className="min-h-screen flex flex-col bg-[#F5F7FB] text-[#111D35] transition-colors font-sans">\n      <Navbar onToggleMobileSidebar={() => setIsMobileOpen(prev => !prev)} />\n      <div className="flex flex-1">\n        <Sidebar\n          isMobileOpen={isMobileOpen}\n          onCloseMobile={() => setIsMobileOpen(false)}\n        />\n        <main\n          id="main-content"\n          tabIndex="-1"\n          role="main"\n          className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full focus:outline-none"\n        >\n          <Outlet />\n        </main>\n      </div>\n    </div>\n  );\n}\n\n
+import React, { useState } from 'react';
+import { Outlet } from 'react-router-dom';
+import Navbar from './Navbar';
+import Sidebar from './Sidebar';
+
+export default function AppLayout() {
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+
+  return (
+    <div className="min-h-screen flex flex-col bg-[#F5F7FB] text-[#111D35] transition-colors font-sans">
+      <Navbar onToggleMobileSidebar={() => setIsMobileOpen(prev => !prev)} />
+      <div className="flex flex-1">
+        <Sidebar
+          isMobileOpen={isMobileOpen}
+          onCloseMobile={() => setIsMobileOpen(false)}
+        />
+        <main
+          id="main-content"
+          tabIndex="-1"
+          role="main"
+          className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full focus:outline-none"
+        >
+          <Outlet />
+        </main>
+      </div>
+    </div>
+  );
+}
+

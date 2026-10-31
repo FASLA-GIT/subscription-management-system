@@ -1,1 +1,151 @@
-import React, { useState } from 'react';\nimport { Link, useNavigate } from 'react-router-dom';\nimport {\n  RefreshCw,\n  Lock,\n  Mail,\n  AlertCircle,\n  ShieldCheck,\n  UserCheck,\n  Users,\n  Eye,\n  EyeOff,\n  ArrowLeft,\n  CheckCircle2,\n  Info,\n  Sparkles\n} from 'lucide-react';\nimport { useAuth, DEFAULT_USERS } from '../context/AuthContext';\nimport { useAccessibility } from '../context/AccessibilityContext';\n\nexport default function Login() {\n  const { login, loginAsRole } = useAuth();\n  const { announce } = useAccessibility();\n  const navigate = useNavigate();\n\n  const [email, setEmail] = useState('admin@brightloop.com');\n  const [password, setPassword] = useState('Admin@Bright2026!');\n  const [showPassword, setShowPassword] = useState(false);\n  const [error, setError] = useState('');\n  const [isLoading, setIsLoading] = useState(false);\n\n  const handleSubmit = async (e) => {\n    e.preventDefault();\n    setError('');\n    if (!email.trim()) {\n      setError('Please provide an email address.');\n      return;\n    }\n\n    setIsLoading(true);\n    try {\n      const res = await login(email, password);\n      if (res.success) {\n        announce(`Signed in as ${res.user.name}`);\n        navigate(res.user.homeRoute || '/app');\n      }\n    } catch (err) {\n      setError(err.message || 'Unable to authenticate demo session.');\n    } finally {\n      setIsLoading(false);\n    }\n  };\n\n  const handleDemoSelect = (roleKey) => {\n    const user = loginAsRole(roleKey);\n    announce(`Demo access granted as ${user.roleLabel}`);\n    navigate(user.homeRoute || '/app');\n  };\n\n  return (\n    <div className="min-h-screen bg-[#F5F7FB] flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 font-sans selection:bg-[#1677F8] selection:text-white">\n      {/* Return to Landing Page Link */}\n      <div className="sm:mx-auto sm:w-full sm:max-w-md mb-4">\n        <Link\n          to="/"\n          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#64748B] hover:text-[#1677F8] transition-colors"\n        >\n          <ArrowLeft className="w-3.5 h-3.5" />\n          <span>Return to Homepage</span>\n        </Link>\n      </div>\n\n      <div className="sm:mx-auto sm:w-full sm:max-w-md">\n        <div className="bg-white py-8 px-6 sm:px-10 rounded-2xl border border-[#E2E8F0] shadow-xl space-y-6 edge-lighting">\n          {/* Header */}\n          <div className="text-center space-y-2">\n            <div className="inline-flex w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#1677F8] to-[#0A5CD6] items-center justify-center text-white shadow-lg shadow-[#1677F8]/20">\n              <RefreshCw className="w-6 h-6" />\n            </div>\n            <h1 className="text-2xl font-black text-[#111D35] tracking-tight">\n              Brightloop SubSync\n            </h1>\n            <p className="text-xs text-[#64748B]">\n              Sign in to your unified subscription workspace\n            </p>\n          </div>\n\n          {/* Form */}\n          <form onSubmit={handleSubmit} className="space-y-4 text-xs">\n            {error && (\n              <div\n                role="alert"\n                className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 flex items-center gap-2"\n              >\n                <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-600" />\n                <span>{error}</span>\n              </div>\n            )}\n\n            <div>\n              <label htmlFor="login-email" className="block font-bold text-[#111D35] mb-1">\n                Email Address\n              </label>\n              <div className="relative">\n                <Mail className="w-4 h-4 text-[#64748B] absolute left-3 top-1/2 -translate-y-1/2" />\n                <input\n                  id="login-email"\n                  type="email"\n                  required\n                  value={email}\n                  onChange={(e) => setEmail(e.target.value)}\n                  placeholder="admin@brightloop.com"\n                  className="w-full pl-9 pr-3 py-2 text-xs bg-[#F5F7FB] border border-[#E2E8F0] rounded-xl text-[#111D35] focus-visible:ring-2 focus-visible:ring-[#1677F8] focus:bg-white transition-all"\n                />\n              </div>\n            </div>\n\n            <div>\n              <div className="flex items-center justify-between mb-1">\n                <label htmlFor="login-password" className="block font-bold text-[#111D35]">\n                  Password\n                </label>\n                <span className="text-[11px] text-[#64748B]">\n                  Demo: any or predefined\n                </span>\n              </div>\n              <div className="relative">\n                <Lock className="w-4 h-4 text-[#64748B] absolute left-3 top-1/2 -translate-y-1/2" />\n                <input\n                  id="login-password"\n                  type={showPassword ? 'text' : 'password'}\n                  required\n                  value={password}\n                  onChange={(e) => setPassword(e.target.value)}\n                  placeholder="••••••••••••"\n                  className="w-full pl-9 pr-10 py-2 text-xs bg-[#F5F7FB] border border-[#E2E8F0] rounded-xl text-[#111D35] focus-visible:ring-2 focus-visible:ring-[#1677F8] focus:bg-white transition-all"\n                />\n                <button\n                  type="button"\n                  onClick={() => setShowPassword(prev => !prev)}\n                  aria-label={showPassword ? 'Hide password' : 'Show password'}\n                  className="p-1 text-[#64748B] hover:text-[#111D35] absolute right-2.5 top-1/2 -translate-y-1/2 rounded"\n                >\n                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}\n                </button>\n              </div>\n            </div>\n\n            <button\n              type="submit"\n              disabled={isLoading}\n              className="w-full py-2.5 px-4 font-bold rounded-xl text-white bg-[#1677F8] hover:bg-[#0A5CD6] shadow-sm hover:shadow-[#1677F8]/25 transition-all active:scale-[0.98] disabled:opacity-50"\n            >\n              {isLoading ? 'Signing In...' : 'Sign In to Workspace'}\n            </button>\n          </form>\n\n          {/* 1-Click Demo Mode Access Section */}\n          <div className="pt-4 border-t border-[#E2E8F0] space-y-3">\n            <div className="flex items-center justify-between">\n              <span className="text-[11px] font-bold uppercase tracking-wider text-[#64748B]">\n                ⚡ 1-Click Demo Persona Access\n              </span>\n              <span className="text-[10px] font-bold bg-[#EAF3FF] text-[#1677F8] px-2 py-0.5 rounded-full">\n                Frontend Demo\n              </span>\n            </div>\n\n            <div className="grid grid-cols-3 gap-2">\n              <button\n                type="button"\n                onClick={() => handleDemoSelect('admin')}\n                className="p-2.5 rounded-xl border border-[#E2E8F0] hover:border-[#1677F8]/50 hover:bg-[#EAF3FF]/40 text-left transition-all edge-lighting"\n              >\n                <div className="flex items-center gap-1.5 text-xs font-bold text-[#111D35]">\n                  <ShieldCheck className="w-3.5 h-3.5 text-[#1677F8]" />\n                  <span>Admin</span>\n                </div>\n                <p className="text-[10px] text-[#64748B] mt-0.5 truncate">Full system</p>\n              </button>\n\n              <button\n                type="button"\n                onClick={() => handleDemoSelect('staff')}\n                className="p-2.5 rounded-xl border border-[#E2E8F0] hover:border-[#1677F8]/50 hover:bg-[#EAF3FF]/40 text-left transition-all edge-lighting"\n              >\n                <div className="flex items-center gap-1.5 text-xs font-bold text-[#111D35]">\n                  <UserCheck className="w-3.5 h-3.5 text-indigo-600" />\n                  <span>Staff</span>\n                </div>\n                <p className="text-[10px] text-[#64748B] mt-0.5 truncate">Operations</p>\n              </button>\n\n              <button\n                type="button"\n                onClick={() => handleDemoSelect('customer')}\n                className="p-2.5 rounded-xl border border-[#E2E8F0] hover:border-[#1677F8]/50 hover:bg-[#EAF3FF]/40 text-left transition-all edge-lighting"\n              >\n                <div className="flex items-center gap-1.5 text-xs font-bold text-[#111D35]">\n                  <Users className="w-3.5 h-3.5 text-emerald-600" />\n                  <span>Customer</span>\n                </div>\n                <p className="text-[10px] text-[#64748B] mt-0.5 truncate">Self-service</p>\n              </button>\n            </div>\n\n            {/* Security Notice */}\n            <div className="p-3 bg-[#F5F7FB] rounded-xl border border-[#E2E8F0] flex items-start gap-2 text-[11px] text-[#64748B]">\n              <Info className="w-4 h-4 text-[#1677F8] flex-shrink-0 mt-0.5" />\n              <p>\n                <strong>Demo Mode:</strong> Role switching and mock auth state are stored non-sensitively in client <code className="font-mono text-[#111D35]">sessionStorage</code>. Real production environments require a trusted backend auth provider.\n              </p>\n            </div>\n          </div>\n        </div>\n      </div>\n    </div>\n  );\n}\n\n
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import {
+  RefreshCw,
+  Lock,
+  Mail,
+  AlertCircle,
+  Eye,
+  EyeOff,
+  ArrowLeft,
+} from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { useAccessibility } from '../context/AccessibilityContext';
+
+export default function Login() {
+  const { login } = useAuth();
+  const { announce } = useAccessibility();
+  const navigate = useNavigate();
+
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    if (!email.trim()) {
+      setError('Please provide an email address.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const res = await login(email, password);
+      if (res.success) {
+        announce(`Signed in as ${res.user.name}`);
+        navigate(res.user.homeRoute || '/app');
+      }
+    } catch (err) {
+      setError(err.response?.data?.detail || err.message || 'Unable to sign in. Please check your credentials and try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#F5F7FB] flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 font-sans selection:bg-[#1677F8] selection:text-white">
+      {/* Return to Landing Page Link */}
+      <div className="sm:mx-auto sm:w-full sm:max-w-md mb-4">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#64748B] hover:text-[#1677F8] transition-colors"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Return to Homepage</span>
+        </Link>
+      </div>
+
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-white py-8 px-6 sm:px-10 rounded-2xl border border-[#E2E8F0] shadow-xl space-y-6 edge-lighting">
+          {/* Header */}
+          <div className="text-center space-y-2">
+            <div className="inline-flex w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#1677F8] to-[#0A5CD6] items-center justify-center text-white shadow-lg shadow-[#1677F8]/20">
+              <RefreshCw className="w-6 h-6" />
+            </div>
+            <h1 className="text-2xl font-black text-[#111D35] tracking-tight">
+              Brightloop SubSync
+            </h1>
+            <p className="text-xs text-[#64748B]">
+              Sign in to your unified subscription workspace
+            </p>
+          </div>
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+            {error && (
+              <div
+                role="alert"
+                className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 flex items-center gap-2"
+              >
+                <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-600" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            <div>
+              <label htmlFor="login-email" className="block font-bold text-[#111D35] mb-1">
+                Email Address
+              </label>
+              <div className="relative">
+                <Mail className="w-4 h-4 text-[#64748B] absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  id="login-email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className="w-full pl-9 pr-3 py-2 text-xs bg-[#F5F7FB] border border-[#E2E8F0] rounded-xl text-[#111D35] focus-visible:ring-2 focus-visible:ring-[#1677F8] focus:bg-white transition-all"
+                />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label htmlFor="login-password" className="block font-bold text-[#111D35]">
+                  Password
+                </label>
+              </div>
+              <div className="relative">
+                <Lock className="w-4 h-4 text-[#64748B] absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  id="login-password"
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••••••"
+                  className="w-full pl-9 pr-10 py-2 text-xs bg-[#F5F7FB] border border-[#E2E8F0] rounded-xl text-[#111D35] focus-visible:ring-2 focus-visible:ring-[#1677F8] focus:bg-white transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(prev => !prev)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  className="p-1 text-[#64748B] hover:text-[#111D35] absolute right-2.5 top-1/2 -translate-y-1/2 rounded"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full py-2.5 px-4 font-bold rounded-xl text-white bg-[#1677F8] hover:bg-[#0A5CD6] shadow-sm hover:shadow-[#1677F8]/25 transition-all active:scale-[0.98] disabled:opacity-50"
+            >
+              {isLoading ? 'Signing In...' : 'Sign In to Workspace'}
+            </button>
+          </form>
+
+          <p className="text-center text-xs text-[#64748B]">
+            New customer? <Link to="/register" className="font-bold text-[#1677F8] hover:underline">Create an account</Link>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+

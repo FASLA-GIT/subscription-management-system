@@ -9,6 +9,8 @@ from sqlalchemy.pool import StaticPool
 # Ensure backend package is importable
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+from app import database as database_module
+from app import main as main_module
 from app.database import Base, get_db
 from app.main import app
 from app.utils.seed_data import seed_database
@@ -22,6 +24,12 @@ engine = create_engine(
     poolclass=StaticPool,
 )
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# Keep the app lifespan and any default database sessions isolated from the
+# configured local database when TestClient starts the application.
+database_module.engine = engine
+database_module.SessionLocal = TestingSessionLocal
+main_module.engine = engine
 
 
 @pytest.fixture(scope="session", autouse=True)

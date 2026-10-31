@@ -2,7 +2,10 @@ import pytest
 from datetime import date, timedelta
 from dateutil.relativedelta import relativedelta
 
-from app.database import engine, SessionLocal, Base
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
+from app.database import Base
 from app.models.customer import Customer
 from app.models.product import Product, ProductVariant
 from app.models.plan import Plan
@@ -32,14 +35,21 @@ from app.services.subscription_service import (
 
 @pytest.fixture(scope="function")
 def db_session():
-    """Provides a clean SQLite database session for each test."""
-    Base.metadata.drop_all(bind=engine)
-    Base.metadata.create_all(bind=engine)
-    session = SessionLocal()
+    """Provides an isolated in-memory database session for each test."""
+    test_engine = create_engine(
+        "sqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(bind=test_engine)
+    test_session_local = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
+    session = test_session_local()
     try:
         yield session
     finally:
         session.close()
+        Base.metadata.drop_all(bind=test_engine)
+        test_engine.dispose()
 
 
 # --- 1. BILLING CALCULATOR & DATE ARITHMETIC TESTS ---

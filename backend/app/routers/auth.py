@@ -158,6 +158,8 @@ def get_current_user_profile(
         role=current_user.role,
         is_active=current_user.is_active,
         customer_id=customer_id,
+        name=current_user.customer.name if current_user.customer else current_user.email.split("@")[0],
+        company_name=current_user.customer.company_name if current_user.customer else None,
         created_at=current_user.created_at,
     )
 
@@ -206,6 +208,8 @@ def create_staff_user(
         role=new_staff.role,
         is_active=new_staff.is_active,
         customer_id=None,
+        name=new_staff.email.split("@")[0],
+        company_name=None,
         created_at=new_staff.created_at,
     )
 
