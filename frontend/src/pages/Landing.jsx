@@ -1,30 +1,30 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { 
-  RefreshCw, 
-  Repeat, 
-  Receipt, 
-  CreditCard, 
-  BarChart3, 
-  ShieldCheck, 
-  ArrowRight, 
-  CheckCircle2, 
-  TrendingUp, 
-  Zap, 
-  Sparkles, 
-  Layers, 
-  Users, 
-  Calendar, 
-  DollarSign, 
-  Clock 
+import {
+  RefreshCw,
+  Repeat,
+  Receipt,
+  CreditCard,
+  BarChart3,
+  ShieldCheck,
+  ArrowRight,
+  CheckCircle2,
+  TrendingUp,
+  Zap,
+  Sparkles,
+  Layers,
+  Users,
+  Calendar,
+  DollarSign,
+  Clock
 } from 'lucide-react';
-import { 
-  AreaChart, 
-  Area, 
-  ResponsiveContainer, 
-  XAxis, 
-  YAxis, 
-  Tooltip 
+import {
+  AreaChart,
+  Area,
+  ResponsiveContainer,
+  XAxis,
+  YAxis,
+  Tooltip
 } from 'recharts';
 import { useAuth } from '../context/AuthContext';
 
@@ -105,9 +105,9 @@ export default function Landing() {
       {/* 2. Hero Section */}
       <section className="relative pt-16 pb-20 md:pt-24 md:pb-32 overflow-hidden bg-gradient-to-b from-white via-[#F5F7FB] to-[#F5F7FB]">
         {/* Subtle Ambient Blue Lighting */}
-        <div 
-          className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[350px] bg-[#1677F8]/12 rounded-full blur-[120px] pointer-events-none" 
-          aria-hidden="true" 
+        <div
+          className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[350px] bg-[#1677F8]/12 rounded-full blur-[120px] pointer-events-none"
+          aria-hidden="true"
         />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center space-y-6">
@@ -215,8 +215,8 @@ export default function Landing() {
                         <AreaChart data={PREVIEW_REVENUE} margin={{ top: 5, right: 10, left: -25, bottom: 0 }}>
                           <defs>
                             <linearGradient id="heroRev" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="#1677F8" stopOpacity={0.35}/>
-                              <stop offset="95%" stopColor="#1677F8" stopOpacity={0.0}/>
+                              <stop offset="5%" stopColor="#1677F8" stopOpacity={0.35} />
+                              <stop offset="95%" stopColor="#1677F8" stopOpacity={0.0} />
                             </linearGradient>
                           </defs>
                           <XAxis dataKey="month" fontSize={10} stroke="#94A3B8" tickLine={false} />
@@ -398,9 +398,9 @@ export default function Landing() {
 
       {/* 5. Final CTA Section */}
       <section className="py-20 bg-[#0B1426] text-white relative overflow-hidden">
-        <div 
-          className="absolute -top-20 right-0 w-[450px] h-[350px] bg-[#1677F8]/20 rounded-full blur-[100px] pointer-events-none" 
-          aria-hidden="true" 
+        <div
+          className="absolute -top-20 right-0 w-[450px] h-[350px] bg-[#1677F8]/20 rounded-full blur-[100px] pointer-events-none"
+          aria-hidden="true"
         />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6 relative z-10">
           <h2 className="text-3xl sm:text-4xl font-black tracking-tight leading-tight">
@@ -454,3 +454,4 @@ export default function Landing() {
     </div>
   );
 }
+

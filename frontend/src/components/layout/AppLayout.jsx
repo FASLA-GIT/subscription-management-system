@@ -10,9 +10,9 @@ export default function AppLayout() {
     <div className="min-h-screen flex flex-col bg-[#F5F7FB] text-[#111D35] transition-colors font-sans">
       <Navbar onToggleMobileSidebar={() => setIsMobileOpen(prev => !prev)} />
       <div className="flex flex-1">
-        <Sidebar 
-          isMobileOpen={isMobileOpen} 
-          onCloseMobile={() => setIsMobileOpen(false)} 
+        <Sidebar
+          isMobileOpen={isMobileOpen}
+          onCloseMobile={() => setIsMobileOpen(false)}
         />
         <main
           id="main-content"

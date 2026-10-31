@@ -9,7 +9,7 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('brightloop_token');
+  const token = sessionStorage.getItem('brightloop_demo_token') || localStorage.getItem('brightloop_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
