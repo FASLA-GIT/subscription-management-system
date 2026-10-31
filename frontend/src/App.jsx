@@ -16,6 +16,7 @@ import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import RoleGuard from './components/common/RoleGuard';
 
 function ProtectedRoute({ children }) {
   const { user } = useAuth();
@@ -49,11 +50,46 @@ export default function App() {
               <Route path="subscriptions" element={<Subscriptions />} />
               <Route path="invoices" element={<Invoices />} />
               <Route path="payments" element={<Payments />} />
-              <Route path="products" element={<Products />} />
-              <Route path="plans" element={<Plans />} />
-              <Route path="discounts" element={<Discounts />} />
-              <Route path="customers" element={<Customers />} />
-              <Route path="reports" element={<Reports />} />
+              <Route 
+                path="products" 
+                element={
+                  <RoleGuard allowedRoles={['admin', 'internal_staff']}>
+                    <Products />
+                  </RoleGuard>
+                } 
+              />
+              <Route 
+                path="plans" 
+                element={
+                  <RoleGuard allowedRoles={['admin', 'internal_staff']}>
+                    <Plans />
+                  </RoleGuard>
+                } 
+              />
+              <Route 
+                path="discounts" 
+                element={
+                  <RoleGuard allowedRoles={['admin']}>
+                    <Discounts />
+                  </RoleGuard>
+                } 
+              />
+              <Route 
+                path="customers" 
+                element={
+                  <RoleGuard allowedRoles={['admin', 'internal_staff']}>
+                    <Customers />
+                  </RoleGuard>
+                } 
+              />
+              <Route 
+                path="reports" 
+                element={
+                  <RoleGuard allowedRoles={['admin', 'internal_staff']}>
+                    <Reports />
+                  </RoleGuard>
+                } 
+              />
               <Route path="settings" element={<Settings />} />
             </Route>
 

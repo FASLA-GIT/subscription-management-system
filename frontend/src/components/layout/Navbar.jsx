@@ -8,18 +8,18 @@ import {
   Users, 
   CheckCircle2, 
   LogOut, 
-  Sliders, 
   Settings, 
   Volume2, 
+  VolumeX,
   ChevronDown, 
   Menu, 
   X, 
-  Sparkles, 
+  KeyRound, 
   SlidersHorizontal 
 } from 'lucide-react';
 import { useAccessibility } from '../../context/AccessibilityContext';
-import { useAuth, DEFAULT_USERS } from '../../context/AuthContext';
-import { checkBackendHealth } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
+import SwitchRoleModal from '../common/SwitchRoleModal';
 
 export default function Navbar({ onToggleMobileSidebar }) {
   const { 
@@ -28,32 +28,21 @@ export default function Navbar({ onToggleMobileSidebar }) {
     textSize, 
     changeTextSize, 
     hoverToSpeech, 
-    setHoverToSpeech, 
+    toggleHoverToSpeech, 
     speechRate, 
     setSpeechRate, 
     isSpeechSupported 
   } = useAccessibility();
 
-  const { user, switchRole, logout } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  const [backendStatus, setBackendStatus] = useState({ isLive: false });
   const [showRoleMenu, setShowRoleMenu] = useState(false);
   const [showA11yModal, setShowA11yModal] = useState(false);
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showSwitchRoleModal, setShowSwitchRoleModal] = useState(false);
 
   const roleMenuRef = useRef(null);
   const a11yMenuRef = useRef(null);
-
-  useEffect(() => {
-    let mounted = true;
-    async function testBackend() {
-      const res = await checkBackendHealth();
-      if (mounted) setBackendStatus({ isLive: res.isLive });
-    }
-    testBackend();
-    return () => { mounted = false; };
-  }, []);
 
   // Close menus on outside click
   useEffect(() => {
@@ -97,41 +86,67 @@ export default function Navbar({ onToggleMobileSidebar }) {
             </button>
 
             <Link to="/app" className="flex items-center gap-2.5 group">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#1677F8] to-[#0A5CD6] flex items-center justify-center text-white shadow-md shadow-[#1677F8]/20 transition-transform group-hover:scale-105">
-                <RefreshCw className="w-4 h-4 animate-[spin_12s_linear_infinite]" aria-hidden="true" />
+              <div className="w-8 h-8 rounded-xl bg-[#0B1426] flex items-center justify-center text-white border border-slate-700 shadow-xs transition-transform group-hover:scale-105">
+                <RefreshCw className="w-4 h-4 text-[#1677F8] animate-[spin_12s_linear_infinite]" aria-hidden="true" />
               </div>
               <div className="leading-none">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-base font-black tracking-tight text-[#111D35]">
-                    Brightloop
+                  <span className="text-base font-black tracking-tight text-[#0B1426]">
+                    BRIGHTLOOP
                   </span>
-                  <span className="hidden sm:inline-block px-1.5 py-0.5 text-[9px] uppercase font-bold tracking-wider bg-[#EAF3FF] text-[#1677F8] rounded">
-                    SubSync
+                  <span className="px-1.5 py-0.5 text-[9px] uppercase font-black tracking-widest bg-[#EAF3FF] text-[#1677F8] rounded border border-[#1677F8]/20">
+                    SMS
                   </span>
                 </div>
+                <span className="text-[10px] text-slate-500 font-medium hidden sm:inline-block">
+                  Subscription Management System
+                </span>
               </div>
             </Link>
           </div>
 
-          {/* Right Controls: Demo Badge, Accessibility & User Profile */}
+          {/* Right Controls: Audio Reader Toggle, Accessibility & Authenticated User */}
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* Demo Mode Badge */}
-            <div 
-              title="Interactive Frontend Demonstration Workspace"
-              className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs border border-[#E2E8F0] bg-[#F5F7FB] text-[#64748B]"
+            
+            {/* Top Bar Dedicated Audio / Text Reader Option */}
+            <button
+              type="button"
+              onClick={toggleHoverToSpeech}
+              aria-pressed={hoverToSpeech}
+              title={hoverToSpeech ? "Audio Text Reader is ON (Click to turn OFF)" : "Audio Text Reader is OFF (Click to turn ON)"}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
+                hoverToSpeech 
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300 ring-1 ring-emerald-400 shadow-xs' 
+                  : 'bg-white text-slate-600 hover:text-slate-900 border-slate-200 hover:border-slate-300 shadow-xs'
+              }`}
             >
-              <span className="w-2 h-2 rounded-full bg-[#1677F8]" />
-              <span className="font-semibold text-[#111D35] text-[11px]">Demo Mode</span>
-            </div>
+              {hoverToSpeech ? (
+                <>
+                  <Volume2 className="w-4 h-4 text-emerald-600 animate-pulse" />
+                  <span className="hidden sm:inline">Text Reader:</span>
+                  <span className="text-[10px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-200/60 text-emerald-900">
+                    ON
+                  </span>
+                </>
+              ) : (
+                <>
+                  <VolumeX className="w-4 h-4 text-slate-400" />
+                  <span className="hidden sm:inline">Text Reader:</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">
+                    OFF
+                  </span>
+                </>
+              )}
+            </button>
 
-            {/* Accessibility Quick Controls & Settings Button */}
+            {/* Accessibility Quick Controls (Text Size & Contrast) */}
             <div 
               role="toolbar" 
-              aria-label="Accessibility options" 
-              className="flex items-center gap-1 bg-[#F5F7FB] p-1 rounded-xl border border-[#E2E8F0]"
+              aria-label="Accessibility display options" 
+              className="hidden md:flex items-center gap-1 bg-[#F5F7FB] p-1 rounded-xl border border-[#E2E8F0]"
             >
               {/* Font Size Scaling */}
-              <div className="flex items-center" title="Adjust text size">
+              <div className="flex items-center" title="Adjust workspace text size">
                 <button
                   type="button"
                   onClick={() => changeTextSize('normal')}
@@ -189,41 +204,37 @@ export default function Navbar({ onToggleMobileSidebar }) {
                 }`}
               >
                 <SunMoon className="w-4 h-4" aria-hidden="true" />
-                <span className="hidden sm:inline text-xs">Contrast</span>
+                <span className="hidden xl:inline text-xs">Contrast</span>
               </button>
 
-              <div className="w-[1px] h-4 bg-[#E2E8F0] mx-0.5" />
-
-              {/* Unobtrusive Accessibility Settings Control (Replaces old Listen button) */}
+              {/* Speech Rate & Accessibility Settings */}
               <div className="relative" ref={a11yMenuRef}>
                 <button
                   type="button"
                   onClick={() => setShowA11yModal(prev => !prev)}
                   aria-expanded={showA11yModal}
                   aria-haspopup="dialog"
-                  aria-label="Open Accessibility & Speech Settings"
-                  title="Accessibility & Speech Settings"
+                  aria-label="Speech rate settings"
+                  title="Speech rate & audio settings"
                   className={`p-1.5 rounded-lg text-xs font-medium flex items-center gap-1 transition-all ${
-                    showA11yModal || hoverToSpeech 
+                    showA11yModal 
                       ? 'bg-[#EAF3FF] text-[#1677F8]' 
-                      : 'text-[#64748B] hover:bg-white hover:text-[#111D35] hover:shadow-xs'
+                      : 'text-[#64748B] hover:bg-white hover:text-[#111D35]'
                   }`}
                 >
                   <SlidersHorizontal className="w-4 h-4" aria-hidden="true" />
-                  <span className="hidden md:inline text-xs">A11y</span>
                 </button>
 
-                {/* Accessibility Settings Popover */}
                 {showA11yModal && (
                   <div 
                     role="dialog"
-                    aria-label="Accessibility Settings"
-                    className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-[#E2E8F0] p-4 z-50 animate-in fade-in zoom-in-95 duration-100 text-xs space-y-3.5"
+                    aria-label="Audio reader settings"
+                    className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-[#E2E8F0] p-4 z-50 text-xs space-y-3.5"
                   >
                     <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-2">
                       <div className="flex items-center gap-2">
-                        <SlidersHorizontal className="w-4 h-4 text-[#1677F8]" />
-                        <h3 className="font-bold text-[#111D35]">Accessibility Settings</h3>
+                        <Volume2 className="w-4 h-4 text-[#1677F8]" />
+                        <h3 className="font-bold text-[#111D35]">Audio Reader Settings</h3>
                       </div>
                       <button
                         type="button"
@@ -235,33 +246,31 @@ export default function Navbar({ onToggleMobileSidebar }) {
                       </button>
                     </div>
 
-                    {/* Hover to Speech Toggle */}
                     <div className="space-y-1">
                       <label className="flex items-center justify-between cursor-pointer">
-                        <span className="font-semibold text-[#111D35]">Hover-to-Speech</span>
+                        <span className="font-semibold text-[#111D35]">Audio Narration</span>
                         <input
                           type="checkbox"
                           checked={hoverToSpeech}
-                          onChange={(e) => setHoverToSpeech(e.target.checked)}
-                          className="w-4 h-4 text-[#1677F8] rounded border-[#CBD5E1] focus-visible:ring-[#1677F8]"
+                          onChange={toggleHoverToSpeech}
+                          className="w-4 h-4 text-[#1677F8] rounded border-[#CBD5E1]"
                         />
                       </label>
                       <p className="text-[11px] text-[#64748B]">
-                        Reads text aloud when hovering mouse for ~600ms. Press <strong>Alt+S</strong> to read focused item.
+                        Reads items when hovering mouse or pressing <strong>Alt+S</strong>.
                       </p>
                     </div>
 
-                    {/* Speech Rate Slider */}
                     {isSpeechSupported && (
-                      <div className="space-y-1 pt-1 border-t border-[#E2E8F0]">
+                      <div className="space-y-1 pt-2 border-t border-[#E2E8F0]">
                         <div className="flex items-center justify-between text-[11px]">
-                          <span className="font-semibold text-[#111D35]">Speech Rate</span>
-                          <span className="font-mono text-[#1677F8]">{speechRate}x</span>
+                          <span className="font-semibold text-[#111D35]">Speech Playback Rate</span>
+                          <span className="font-mono text-[#1677F8] font-bold">{speechRate}x</span>
                         </div>
                         <input
                           type="range"
                           min="0.75"
-                          max="1.3"
+                          max="1.4"
                           step="0.05"
                           value={speechRate}
                           onChange={(e) => setSpeechRate(parseFloat(e.target.value))}
@@ -270,29 +279,22 @@ export default function Navbar({ onToggleMobileSidebar }) {
                         />
                       </div>
                     )}
-
-                    {/* High Contrast info */}
-                    <div className="pt-1 border-t border-[#E2E8F0] text-[11px] text-[#64748B]">
-                      <p>
-                        High contrast mode uses pure contrast borders and black/white high-visibility text.
-                      </p>
-                    </div>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Role Switcher & User Profile Dropdown */}
+            {/* Authenticated User Profile & Protected Switch Role Menu */}
             <div className="relative" ref={roleMenuRef}>
               <button
                 type="button"
                 onClick={() => setShowRoleMenu(prev => !prev)}
                 aria-haspopup="true"
                 aria-expanded={showRoleMenu}
-                aria-label={`Logged in as ${user?.name || 'User'} (${user?.roleLabel || 'Demo'}). Click to switch role or sign out.`}
-                className="flex items-center gap-2 p-1.5 rounded-xl border border-[#E2E8F0] hover:border-[#1677F8]/40 bg-[#F5F7FB] hover:bg-white transition-all text-left edge-lighting"
+                aria-label={`Logged in as ${user?.name || 'User'} (${user?.roleLabel || 'Member'}).`}
+                className="flex items-center gap-2 p-1.5 rounded-xl border border-[#E2E8F0] hover:border-[#1677F8]/40 bg-[#F8FAFC] hover:bg-white transition-all text-left shadow-xs"
               >
-                <div className="w-7 h-7 rounded-lg bg-[#1677F8] text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                <div className="w-7 h-7 rounded-lg bg-[#0B1426] text-white flex items-center justify-center font-bold text-xs border border-slate-700">
                   {user?.avatar || 'U'}
                 </div>
                 <div className="hidden md:block leading-tight pr-1">
@@ -304,84 +306,76 @@ export default function Navbar({ onToggleMobileSidebar }) {
                 <ChevronDown className="w-3.5 h-3.5 text-[#64748B] hidden sm:block" />
               </button>
 
-              {/* Role Switcher Menu */}
+              {/* Secure User Menu with Password-Protected Role Switch */}
               {showRoleMenu && (
                 <div 
                   role="menu" 
-                  aria-label="Demo Persona Switcher"
-                  className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-[#E2E8F0] py-2 z-50 animate-in fade-in zoom-in-95 duration-100"
+                  aria-label="User Account Menu"
+                  className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-[#E2E8F0] py-2 z-50 animate-in fade-in zoom-in-95 duration-100"
                 >
-                  <div className="px-3 py-1.5 border-b border-[#E2E8F0]">
-                    <p className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider">
-                      Demo Role Switcher
-                    </p>
-                    <p className="text-[11px] text-[#111D35]">
-                      Switch personas to test role-specific workflows:
-                    </p>
+                  {/* Account Header */}
+                  <div className="px-4 py-3 border-b border-[#E2E8F0] bg-[#F8FAFC]/80">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                      <span className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider">
+                        Authenticated Session
+                      </span>
+                    </div>
+                    <p className="text-xs font-black text-[#111D35]">{user?.name}</p>
+                    <p className="text-[11px] text-[#64748B] font-mono truncate">{user?.email}</p>
+                    <div className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EAF3FF] text-[#1677F8]">
+                      {user?.role === 'admin' ? (
+                        <ShieldCheck className="w-3 h-3" />
+                      ) : user?.role === 'internal_staff' ? (
+                        <UserCheck className="w-3 h-3" />
+                      ) : (
+                        <Users className="w-3 h-3" />
+                      )}
+                      <span>{user?.roleLabel || user?.role}</span>
+                    </div>
                   </div>
 
-                  <div className="p-1.5 space-y-1">
-                    <button
-                      type="button"
+                  {/* Actions */}
+                  <div className="p-2 space-y-1">
+                    <Link
+                      to="/app/settings"
                       role="menuitem"
-                      onClick={() => { switchRole('admin'); setShowRoleMenu(false); }}
-                      className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded-xl text-left transition-all ${
-                        user?.role === 'admin' 
-                          ? 'bg-[#EAF3FF] text-[#1677F8] font-bold' 
-                          : 'hover:bg-[#F5F7FB] text-[#111D35]'
-                      }`}
+                      onClick={() => setShowRoleMenu(false)}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-xs rounded-xl text-slate-700 hover:bg-[#F5F7FB] transition-colors font-medium"
                     >
-                      <span className="flex items-center gap-2">
-                        <ShieldCheck className="w-4 h-4 text-[#1677F8]" />
-                        <span>Admin (Full Access)</span>
-                      </span>
-                      {user?.role === 'admin' && <CheckCircle2 className="w-3.5 h-3.5 text-[#1677F8]" />}
-                    </button>
+                      <Settings className="w-4 h-4 text-slate-400" />
+                      <span>Workspace Settings</span>
+                    </Link>
 
+                    {/* Secure Role Switch with Password Gate */}
                     <button
                       type="button"
                       role="menuitem"
-                      onClick={() => { switchRole('staff'); setShowRoleMenu(false); }}
-                      className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded-xl text-left transition-all ${
-                        user?.role === 'internal_staff' 
-                          ? 'bg-[#EAF3FF] text-[#1677F8] font-bold' 
-                          : 'hover:bg-[#F5F7FB] text-[#111D35]'
-                      }`}
+                      onClick={() => {
+                        setShowRoleMenu(false);
+                        setShowSwitchRoleModal(true);
+                      }}
+                      className="w-full flex items-center justify-between px-3 py-2 text-xs rounded-xl text-slate-700 hover:bg-[#EAF3FF] hover:text-[#1677F8] transition-colors font-medium"
                     >
-                      <span className="flex items-center gap-2">
-                        <UserCheck className="w-4 h-4 text-indigo-600" />
-                        <span>Staff (Operations)</span>
+                      <span className="flex items-center gap-2.5">
+                        <KeyRound className="w-4 h-4 text-[#1677F8]" />
+                        <span>Switch Account / Role...</span>
                       </span>
-                      {user?.role === 'internal_staff' && <CheckCircle2 className="w-3.5 h-3.5 text-[#1677F8]" />}
-                    </button>
-
-                    <button
-                      type="button"
-                      role="menuitem"
-                      onClick={() => { switchRole('customer'); setShowRoleMenu(false); }}
-                      className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded-xl text-left transition-all ${
-                        user?.role === 'customer' 
-                          ? 'bg-[#EAF3FF] text-[#1677F8] font-bold' 
-                          : 'hover:bg-[#F5F7FB] text-[#111D35]'
-                      }`}
-                    >
-                      <span className="flex items-center gap-2">
-                        <Users className="w-4 h-4 text-emerald-600" />
-                        <span>Customer (Portal)</span>
+                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-100">
+                        Auth Required
                       </span>
-                      {user?.role === 'customer' && <CheckCircle2 className="w-3.5 h-3.5 text-[#1677F8]" />}
                     </button>
                   </div>
 
-                  <div className="pt-1.5 border-t border-[#E2E8F0] px-1.5">
+                  <div className="pt-2 border-t border-[#E2E8F0] px-2">
                     <button
                       type="button"
                       role="menuitem"
                       onClick={handleSignOut}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-xs rounded-xl text-rose-600 hover:bg-rose-50 font-semibold transition-colors"
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-xs rounded-xl text-rose-600 hover:bg-rose-50 font-semibold transition-colors"
                     >
                       <LogOut className="w-4 h-4" />
-                      <span>Sign Out (Clear Session)</span>
+                      <span>Sign Out (Terminate Session)</span>
                     </button>
                   </div>
                 </div>
@@ -390,6 +384,12 @@ export default function Navbar({ onToggleMobileSidebar }) {
           </div>
         </div>
       </header>
+
+      {/* Re-Authentication Gate for Switching Roles */}
+      <SwitchRoleModal 
+        isOpen={showSwitchRoleModal} 
+        onClose={() => setShowSwitchRoleModal(false)} 
+      />
     </>
   );
 }

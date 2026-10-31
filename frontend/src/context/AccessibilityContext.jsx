@@ -13,10 +13,10 @@ export function AccessibilityProvider({ children }) {
     return localStorage.getItem('brightloop_text_size') || 'normal';
   });
 
-  // 3. Hover-to-speech settings
+  // 3. Hover-to-speech settings (Disabled by default; activated via Top Bar option)
   const [hoverToSpeech, setHoverToSpeech] = useState(() => {
     const saved = localStorage.getItem('brightloop_hover_speech');
-    return saved !== null ? saved === 'true' : true; // Enabled by default for demonstration
+    return saved === 'true'; // strictly false unless explicitly toggled ON by user
   });
 
   const [speechRate, setSpeechRate] = useState(() => {
@@ -70,6 +70,17 @@ export function AccessibilityProvider({ children }) {
       return next;
     });
   }, []);
+
+  const toggleHoverToSpeech = useCallback(() => {
+    setHoverToSpeech(prev => {
+      const next = !prev;
+      if (!next && isSpeechSupported) {
+        window.speechSynthesis.cancel();
+      }
+      announce(next ? 'Audio text reader enabled. Hover over items to listen.' : 'Audio text reader disabled.');
+      return next;
+    });
+  }, [isSpeechSupported]);
 
   const changeTextSize = useCallback((size) => {
     setTextSize(size);
@@ -220,6 +231,7 @@ export function AccessibilityProvider({ children }) {
         changeTextSize,
         hoverToSpeech,
         setHoverToSpeech,
+        toggleHoverToSpeech,
         speechRate,
         setSpeechRate,
         hoverDelay,
