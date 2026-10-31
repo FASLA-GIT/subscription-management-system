@@ -31,5 +31,17 @@ class Customer(Base):
     subscriptions = relationship("Subscription", back_populates="customer", cascade="all, delete-orphan")
     invoices = relationship("Invoice", back_populates="customer", cascade="all, delete-orphan")
 
+    @property
+    def contact_name(self):
+        return self.name
+
+    @property
+    def address(self):
+        return getattr(self, "billing_address", None) or ", ".join(filter(None, [self.address_line1, self.city, self.state]))
+
+    @property
+    def gst_number(self):
+        return self.tax_id
+
     def __repr__(self):
         return f"<Customer id={self.id} name={self.name} email={self.email}>"

@@ -1,7 +1,1 @@
-export default {
-  plugins: {
-    tailwindcss: {},
-    autoprefixer: {},
-  },
-}
-
+export default {\n  plugins: {\n    tailwindcss: {},\n    autoprefixer: {},\n  },\n}\n\n\n

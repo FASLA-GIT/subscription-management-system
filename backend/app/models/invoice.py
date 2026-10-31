@@ -72,6 +72,14 @@ class Invoice(Base):
     def outstanding_amount(self, val):
         self.balance_due = val
 
+    @property
+    def customer_name(self):
+        return self.customer.company_name or self.customer.name if self.customer else None
+
+    @property
+    def subscription_number(self):
+        return self.subscription.subscription_number if self.subscription else None
+
     def __repr__(self):
         return f"<Invoice id={self.id} number={self.invoice_number} status={self.status} total={self.total_amount}>"
 

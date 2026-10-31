@@ -53,5 +53,21 @@ class Plan(Base):
     def early_closure_allowed(self, val):
         self.early_close = val
 
+    @property
+    def allow_pause(self):
+        return self.pause_allowed
+
+    @allow_pause.setter
+    def allow_pause(self, val):
+        self.pause_allowed = val
+
+    @property
+    def allow_renewal(self):
+        return self.renewal_allowed
+
+    @allow_renewal.setter
+    def allow_renewal(self, val):
+        self.renewal_allowed = val
+
     def __repr__(self):
         return f"<Plan id={self.id} name={self.name} freq={self.billing_frequency} price={self.price}>"

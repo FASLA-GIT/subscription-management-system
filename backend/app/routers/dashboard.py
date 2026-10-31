@@ -100,3 +100,29 @@ def get_monthly_revenue_chart(
         RevenueChartPoint(month=m, revenue=val)
         for m, val in monthly_data.items()
     ]
+
+
+@router.get("/overdue")
+def get_overdue_invoices(db: Session = Depends(get_db), current_user: User = Depends(require_staff_or_admin)):
+    """Return overdue invoices and their current outstanding balances."""
+    today = datetime.utcnow().date()
+    invoices = db.query(Invoice).filter(
+        Invoice.status.notin_(["paid", "cancelled"]), Invoice.balance_due > Decimal("0.00")
+    ).order_by(Invoice.due_date.asc()).all()
+    overdue = []
+    for invoice in invoices:
+        due_date = invoice.due_date.date() if isinstance(invoice.due_date, datetime) else invoice.due_date
+        if due_date and due_date < today:
+            overdue.append({
+                "id": invoice.id,
+                "invoice_number": invoice.invoice_number,
+                "customer_id": invoice.customer_id,
+                "customer_name": invoice.customer.company_name or invoice.customer.name,
+                "due_date": due_date.isoformat(),
+                "days_overdue": (today - due_date).days,
+                "outstanding_amount": str(invoice.balance_due),
+                "status": "overdue" if invoice.status != "partially_paid" else "partially_paid",
+            })
+    return {"total_overdue_count": len(overdue),
+            "total_overdue_amount": str(sum((Decimal(i["outstanding_amount"]) for i in overdue), Decimal("0.00"))),
+            "items": overdue}

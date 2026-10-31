@@ -59,6 +59,8 @@ def record_payment(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="This invoice has already been fully paid.",
         )
+    if invoice.status == "cancelled":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot record payment on a cancelled invoice.")
 
     payment_amount = Decimal(str(payload.amount))
     if payment_amount <= Decimal("0.00"):
@@ -78,6 +80,7 @@ def record_payment(
         invoice_id=invoice.id,
         payment_method=payload.payment_method,
         amount=payment_amount,
+        payment_date=payload.payment_date,
         reference_number=payload.reference_number,
         notes=payload.notes,
     )
@@ -89,6 +92,8 @@ def record_payment(
 
     if invoice.balance_due == Decimal("0.00"):
         invoice.status = "paid"
+    else:
+        invoice.status = "partially_paid"
 
     db.commit()
     db.refresh(payment)

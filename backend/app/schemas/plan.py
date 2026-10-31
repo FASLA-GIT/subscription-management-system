@@ -31,8 +31,8 @@ class PlanBase(BaseModel):
         default=False,
         validation_alias=AliasChoices("early_close", "early_closure_allowed")
     )
-    pause_allowed: bool = True
-    renewal_allowed: bool = True
+    pause_allowed: bool = Field(default=True, validation_alias=AliasChoices("pause_allowed", "allow_pause"))
+    renewal_allowed: bool = Field(default=True, validation_alias=AliasChoices("renewal_allowed", "allow_renewal"))
     description: Optional[str] = None
     is_active: bool = True
 
@@ -50,6 +50,16 @@ class PlanBase(BaseModel):
     @property
     def early_closure_allowed(self) -> bool:
         return self.early_close
+
+    @computed_field
+    @property
+    def allow_pause(self) -> bool:
+        return self.pause_allowed
+
+    @computed_field
+    @property
+    def allow_renewal(self) -> bool:
+        return self.renewal_allowed
 
 
 class PlanCreate(PlanBase):

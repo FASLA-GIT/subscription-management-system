@@ -30,19 +30,22 @@ def list_plans(
 
 @router.post("", response_model=PlanResponse, status_code=status.HTTP_201_CREATED)
 def create_plan(
-    payload: PlanCreate,
+    plan_in: PlanCreate,
     db: Session = Depends(get_db),
     admin_user: User = Depends(require_admin),
 ):
     """Admin endpoint to create a subscription plan."""
     valid_frequencies = ["daily", "weekly", "monthly", "yearly"]
-    if payload.billing_frequency.lower() not in valid_frequencies:
+    if plan_in.billing_frequency.lower() not in valid_frequencies:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Billing frequency must be one of: {', '.join(valid_frequencies)}.",
         )
 
-    plan_data = payload.model_dump()
+    plan_data = plan_in.model_dump(exclude={"min_quantity", "auto_closure", "early_closure_allowed"})
+    plan_data["pause_allowed"] = plan_in.allow_pause
+    plan_data["renewal_allowed"] = plan_in.allow_renewal
+    plan_data["early_close"] = plan_in.early_close
     plan_data["billing_frequency"] = plan_data["billing_frequency"].lower()
     plan = Plan(**plan_data)
     db.add(plan)

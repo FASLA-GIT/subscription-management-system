@@ -57,7 +57,7 @@ class SubscriptionBase(BaseModel):
 
 class SubscriptionCreate(SubscriptionBase):
     items: List[SubscriptionItemCreate]
-    status: Optional[str] = "draft"
+    status: Optional[str] = "active"
     discount_amount: Optional[Decimal] = Decimal("0.00")
 
 

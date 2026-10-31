@@ -135,7 +135,7 @@ def test_complete_end_to_end_business_lifecycle(client, admin_headers):
     inv_check1 = client.get(f"/api/billing/invoices/{new_invoice_id}", headers=admin_headers).json()
     assert Decimal(str(inv_check1["amount_paid"])) == partial_pay
     assert Decimal(str(inv_check1["balance_due"])) == total_due - partial_pay
-    assert inv_check1["status"] == "confirmed"
+    assert inv_check1["status"] == "partially_paid"
 
     # Complete remaining balance payment
     remaining = Decimal(str(inv_check1["balance_due"]))

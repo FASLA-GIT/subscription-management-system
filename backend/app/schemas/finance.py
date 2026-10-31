@@ -145,6 +145,7 @@ class PaymentCreate(BaseModel):
     invoice_id: int
     payment_method: str = Field("bank_transfer", description="bank_transfer, credit_card, cash, upi, other")
     amount: Decimal = Field(..., gt=0)
+    payment_date: Optional[datetime] = None
     reference_number: Optional[str] = None
     notes: Optional[str] = Field(
         None,

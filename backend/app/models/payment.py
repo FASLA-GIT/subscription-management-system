@@ -27,6 +27,14 @@ class Payment(Base):
 
     @property
     def customer_name(self):
+        return self.invoice.customer.company_name or self.invoice.customer.name if self.invoice and self.invoice.customer else None
+
+    @property
+    def invoice_number(self):
+        return self.invoice.invoice_number if self.invoice else None
+
+    @property
+    def customer_name(self):
         return self.invoice.customer.name if self.invoice and self.invoice.customer else None
 
     @property

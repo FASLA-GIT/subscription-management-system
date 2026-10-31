@@ -19,6 +19,16 @@ def seed_database(db: Session):
     if db.query(User).filter(User.email == "admin@brightloop.com").first():
         return
 
+    # Older/local databases can contain business records without the demo accounts.
+    # Add only the missing operator accounts instead of duplicating seeded records.
+    if db.query(Subscription).first():
+        db.add_all([
+            User(email="admin@brightloop.com", hashed_password=hash_password("Admin@Brightloop123!"), role="admin", is_active=True),
+            User(email="staff@brightloop.com", hashed_password=hash_password("Staff@Brightloop123!"), role="staff", is_active=True),
+        ])
+        db.commit()
+        return
+
     print("--- Seeding initial demo data for Brightloop Subscription Management ---")
 
     # 1. Users

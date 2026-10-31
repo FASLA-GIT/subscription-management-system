@@ -17,10 +17,19 @@ from app.schemas.product import (
 router = APIRouter(prefix="/products", tags=["Products & Variants"])
 
 
+@router.get("/{product_id}/variants", response_model=List[VariantResponse])
+def list_product_variants(product_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    return product.variants
+
+
 @router.get("", response_model=List[ProductResponse])
 def list_products(
     is_active: Optional[bool] = Query(None),
     product_type: Optional[str] = Query(None),
+    search: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -30,30 +39,32 @@ def list_products(
         query = query.filter(Product.is_active == is_active)
     if product_type:
         query = query.filter(Product.product_type == product_type)
+    if search:
+        query = query.filter(Product.name.ilike(f"%{search}%"))
 
     return query.order_by(Product.name.asc()).all()
 
 
 @router.post("", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
 def create_product(
-    payload: ProductCreate,
+    product_in: ProductCreate,
     db: Session = Depends(get_db),
     admin_user: User = Depends(require_admin),
 ):
     """Admin endpoint to create a new product and optional variants."""
     product = Product(
-        name=payload.name,
-        product_type=payload.product_type,
-        sales_price=payload.sales_price,
-        cost_price=payload.cost_price,
-        description=payload.description,
-        is_active=payload.is_active,
+        name=product_in.name,
+        product_type=product_in.product_type,
+        sales_price=product_in.sales_price,
+        cost_price=product_in.cost_price,
+        description=product_in.description,
+        is_active=product_in.is_active,
     )
     db.add(product)
     db.flush()
 
-    if payload.variants:
-        for v in payload.variants:
+    if product_in.variants:
+        for v in product_in.variants:
             variant = Variant(
                 product_id=product.id,
                 variant_name=v.variant_name,

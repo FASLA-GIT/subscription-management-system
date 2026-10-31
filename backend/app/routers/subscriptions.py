@@ -17,21 +17,86 @@ from app.schemas.subscription import (
     SubscriptionStatusUpdate,
     SubscriptionUpdate,
 )
+from app.services.billing_calculator import compute_billing_period, compute_next_billing_date
+from app.services.subscription_service import (
+    create_subscription as create_subscription_record,
+    transition_subscription_status, pause_subscription, resume_subscription,
+    close_subscription, renew_subscription, convert_quotation_to_subscription,
+)
 
 router = APIRouter(prefix="/subscriptions", tags=["Subscriptions"])
 
 
 def calculate_next_billing_date(start_date: datetime, frequency: str) -> datetime:
-    """Calculate the next billing date based on the plan frequency."""
-    freq = frequency.lower()
-    if freq == "daily":
-        return start_date + timedelta(days=1)
-    elif freq == "weekly":
-        return start_date + timedelta(weeks=1)
-    elif freq == "yearly":
-        return start_date + timedelta(days=365)
-    else:  # monthly default
-        return start_date + timedelta(days=30)
+    """Calculate calendar-correct billing dates, preserving date/datetime input."""
+    next_date = compute_next_billing_date(start_date.date() if isinstance(start_date, datetime) else start_date, frequency)
+    return datetime.combine(next_date, start_date.time()) if isinstance(start_date, datetime) else next_date
+
+
+def list_due_subscriptions(due_date, db: Session):
+    cutoff = due_date.date() if isinstance(due_date, datetime) else due_date
+    candidates = db.query(Subscription).filter(
+        Subscription.status == "active", Subscription.next_billing_date.isnot(None)
+    ).order_by(Subscription.next_billing_date.asc()).all()
+    return [sub for sub in candidates if not sub.is_paused and
+            (sub.next_billing_date.date() if isinstance(sub.next_billing_date, datetime) else sub.next_billing_date) <= cutoff]
+
+
+def advance_billing_date(subscription_id: int, db: Session):
+    sub = db.query(Subscription).filter(Subscription.id == subscription_id).first()
+    if not sub:
+        raise HTTPException(status_code=404, detail="Subscription not found")
+    sub.next_billing_date = calculate_next_billing_date(sub.next_billing_date or sub.start_date, sub.plan.billing_frequency)
+    db.commit()
+    db.refresh(sub)
+    return sub
+
+
+@router.get("/due", response_model=List[SubscriptionResponse])
+def due_subscriptions_endpoint(db: Session = Depends(get_db), current_user: User = Depends(require_staff_or_admin)):
+    return list_due_subscriptions(datetime.utcnow(), db)
+
+
+@router.post("/{subscription_id}/advance-billing-date", response_model=SubscriptionResponse)
+def advance_billing_date_endpoint(subscription_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_staff_or_admin)):
+    return advance_billing_date(subscription_id, db)
+
+
+def _run_lifecycle(fn, subscription_id: int, db: Session, reason: Optional[str] = None):
+    try:
+        if fn is close_subscription:
+            return fn(db, subscription_id, reason=reason)
+        return fn(db, subscription_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/{subscription_id}/pause", response_model=SubscriptionResponse)
+def pause_subscription_endpoint(subscription_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_staff_or_admin)):
+    return _run_lifecycle(pause_subscription, subscription_id, db)
+
+
+@router.post("/{subscription_id}/resume", response_model=SubscriptionResponse)
+def resume_subscription_endpoint(subscription_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_staff_or_admin)):
+    return _run_lifecycle(resume_subscription, subscription_id, db)
+
+
+@router.post("/{subscription_id}/close", response_model=SubscriptionResponse)
+def close_subscription_endpoint(subscription_id: int, payload: dict, db: Session = Depends(get_db), current_user: User = Depends(require_staff_or_admin)):
+    return _run_lifecycle(close_subscription, subscription_id, db, payload.get("reason"))
+
+
+@router.post("/{subscription_id}/renew", response_model=SubscriptionResponse)
+def renew_subscription_endpoint(subscription_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_staff_or_admin)):
+    return _run_lifecycle(renew_subscription, subscription_id, db)
+
+
+@router.post("/{subscription_id}/convert-quote", response_model=SubscriptionResponse)
+def convert_quote_endpoint(subscription_id: int, activate: bool = True, db: Session = Depends(get_db), current_user: User = Depends(require_staff_or_admin)):
+    try:
+        return convert_quotation_to_subscription(db, subscription_id, activate=activate)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @router.get("", response_model=List[SubscriptionResponse])
@@ -78,78 +143,22 @@ def create_subscription(
                 detail="You cannot create subscriptions for other customers.",
             )
 
-    customer = db.query(Customer).filter(Customer.id == payload.customer_id).first()
-    if not customer:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Customer not found.")
-
-    plan = db.query(Plan).filter(Plan.id == payload.plan_id).first()
-    if not plan:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plan not found.")
-
-    if not payload.items:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="At least one product line item is required.")
-
-    # Generate sequential unique subscription number
-    count = db.query(Subscription).count() + 1
-    sub_number = f"SUB-{datetime.utcnow().year}-{count:04d}"
-
-    start_dt = payload.start_date or datetime.utcnow()
-    next_bill = calculate_next_billing_date(start_dt, plan.billing_frequency)
-
-    subscription = Subscription(
-        subscription_number=sub_number,
-        customer_id=customer.id,
-        plan_id=plan.id,
-        status="active",  # Direct activation for seamless workflow
-        start_date=start_dt,
-        expiry_date=payload.expiry_date,
-        payment_terms=payload.payment_terms,
-        next_billing_date=next_bill,
-        tax_rate=payload.tax_rate,
-        notes=payload.notes,
-    )
-    db.add(subscription)
-    db.flush()
-
-    subtotal = Decimal("0.00")
-
-    for item_data in payload.items:
-        product = db.query(Product).filter(Product.id == item_data.product_id).first()
-        if not product:
-            raise HTTPException(status_code=404, detail=f"Product {item_data.product_id} not found.")
-
-        unit_price = Decimal(str(product.sales_price))
-        if item_data.variant_id:
-            variant = db.query(Variant).filter(
-                Variant.id == item_data.variant_id,
-                Variant.product_id == product.id
-            ).first()
-            if variant:
-                unit_price += Decimal(str(variant.additional_price))
-
-        total_price = unit_price * Decimal(item_data.quantity)
-        subtotal += total_price
-
-        sub_item = SubscriptionItem(
-            subscription_id=subscription.id,
-            product_id=product.id,
-            variant_id=item_data.variant_id,
-            quantity=item_data.quantity,
-            unit_price=unit_price,
-            total_price=total_price,
+    try:
+        return create_subscription_record(
+            db=db,
+            customer_id=payload.customer_id,
+            plan_id=payload.plan_id,
+            items_data=[item.model_dump(exclude_none=True) for item in payload.items],
+            status=(payload.status or "draft"),
+            start_date=payload.start_date.date() if isinstance(payload.start_date, datetime) else payload.start_date,
+            expiry_date=payload.expiry_date.date() if isinstance(payload.expiry_date, datetime) else payload.expiry_date,
+            payment_terms=payload.payment_terms,
+            tax_percentage=float(payload.tax_rate),
+            discount_amount=float(payload.discount_amount or 0),
+            notes=payload.notes,
         )
-        db.add(sub_item)
-
-    # Tax calculation
-    tax_amount = (subtotal * Decimal(str(payload.tax_rate))) / Decimal("100.00")
-    total_amount = subtotal + tax_amount
-
-    subscription.tax_amount = tax_amount
-    subscription.total_amount = total_amount
-
-    db.commit()
-    db.refresh(subscription)
-    return subscription
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
 
 @router.get("/{subscription_id}", response_model=SubscriptionResponse)
@@ -190,12 +199,7 @@ def update_subscription_status(
     if not sub:
         raise HTTPException(status_code=404, detail="Subscription not found.")
 
-    sub.status = new_status
-    if new_status == "paused":
-        sub.is_paused = True
-    elif new_status == "active":
-        sub.is_paused = False
-
-    db.commit()
-    db.refresh(sub)
-    return sub
+    try:
+        return transition_subscription_status(db, subscription_id, new_status, reason=payload.reason)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc

@@ -3,13 +3,15 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.database import Base, SessionLocal, engine
+from app.database import Base, SessionLocal, engine, upgrade_sqlite_schema
 from app.models import *  # Import all models to ensure metadata is registered
 from app.routers import (
     auth_router,
     billing_router,
+    invoices_router,
     customers_router,
     dashboard_router,
+    discounts_router,
     payments_router,
     plans_router,
     products_router,
@@ -22,6 +24,7 @@ from app.utils.seed_data import seed_database
 async def lifespan(app: FastAPI):
     # Startup: Create tables and seed data if needed
     Base.metadata.create_all(bind=engine)
+    upgrade_sqlite_schema()
     db = SessionLocal()
     try:
         seed_database(db)
@@ -56,8 +59,10 @@ app.include_router(products_router, prefix=settings.API_V1_STR)
 app.include_router(plans_router, prefix=settings.API_V1_STR)
 app.include_router(subscriptions_router, prefix=settings.API_V1_STR)
 app.include_router(billing_router, prefix=settings.API_V1_STR)
+app.include_router(invoices_router, prefix=settings.API_V1_STR)
 app.include_router(payments_router, prefix=settings.API_V1_STR)
 app.include_router(dashboard_router, prefix=settings.API_V1_STR)
+app.include_router(discounts_router, prefix=settings.API_V1_STR)
 
 
 @app.get("/", tags=["Health Check"])
