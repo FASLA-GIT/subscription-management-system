@@ -28,5 +28,30 @@ class Plan(Base):
     # Relationships
     subscriptions = relationship("Subscription", back_populates="plan")
 
+    # Compatibility properties for frontend naming
+    @property
+    def min_quantity(self):
+        return self.minimum_quantity
+
+    @min_quantity.setter
+    def min_quantity(self, val):
+        self.minimum_quantity = val
+
+    @property
+    def auto_closure(self):
+        return self.auto_close
+
+    @auto_closure.setter
+    def auto_closure(self, val):
+        self.auto_close = val
+
+    @property
+    def early_closure_allowed(self):
+        return self.early_close
+
+    @early_closure_allowed.setter
+    def early_closure_allowed(self, val):
+        self.early_close = val
+
     def __repr__(self):
         return f"<Plan id={self.id} name={self.name} freq={self.billing_frequency} price={self.price}>"

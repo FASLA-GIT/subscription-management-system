@@ -29,7 +29,7 @@ class Invoice(Base):
     due_date = Column(DateTime, nullable=False)
     
     # Lifecycle: draft -> confirmed -> paid (or cancelled)
-    status = Column(String(50), default="draft", nullable=False)
+    status = Column(String(50), default="draft", nullable=False, index=True)
     notes = Column(Text, nullable=True)
 
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
@@ -46,6 +46,31 @@ class Invoice(Base):
         # Prevent duplicate invoices for the same subscription and billing period
         UniqueConstraint("subscription_id", "billing_period_start", "billing_period_end", name="uq_sub_billing_period"),
     )
+
+    # Compatibility properties for frontend naming
+    @property
+    def final_amount(self):
+        return self.total_amount
+
+    @final_amount.setter
+    def final_amount(self, val):
+        self.total_amount = val
+
+    @property
+    def paid_amount(self):
+        return self.amount_paid
+
+    @paid_amount.setter
+    def paid_amount(self, val):
+        self.amount_paid = val
+
+    @property
+    def outstanding_amount(self):
+        return self.balance_due
+
+    @outstanding_amount.setter
+    def outstanding_amount(self, val):
+        self.balance_due = val
 
     def __repr__(self):
         return f"<Invoice id={self.id} number={self.invoice_number} status={self.status} total={self.total_amount}>"
@@ -67,6 +92,15 @@ class InvoiceItem(Base):
     invoice = relationship("Invoice", back_populates="items")
     product = relationship("Product", back_populates="invoice_items")
     variant = relationship("Variant", back_populates="invoice_items")
+
+    # Compatibility property for frontend naming
+    @property
+    def amount(self):
+        return self.total_price
+
+    @amount.setter
+    def amount(self, val):
+        self.total_price = val
 
     def __repr__(self):
         return f"<InvoiceItem id={self.id} invoice_id={self.invoice_id} desc={self.description} total={self.total_price}>"

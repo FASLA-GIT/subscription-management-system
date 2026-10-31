@@ -21,5 +21,21 @@ class Payment(Base):
     # Relationships
     invoice = relationship("Invoice", back_populates="payments")
 
+    @property
+    def invoice_number(self):
+        return self.invoice.invoice_number if self.invoice else None
+
+    @property
+    def customer_name(self):
+        return self.invoice.customer.name if self.invoice and self.invoice.customer else None
+
+    @property
+    def note(self):
+        return self.notes
+
+    @note.setter
+    def note(self, val):
+        self.notes = val
+
     def __repr__(self):
         return f"<Payment id={self.id} invoice_id={self.invoice_id} amount={self.amount} method={self.payment_method}>"

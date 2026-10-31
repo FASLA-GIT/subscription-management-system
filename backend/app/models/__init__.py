@@ -1,7 +1,7 @@
 from app.database import Base
 from app.models.user import User
 from app.models.customer import Customer
-from app.models.product import Product, Variant
+from app.models.product import Product, Variant, ProductVariant
 from app.models.plan import Plan
 from app.models.subscription import Subscription, SubscriptionItem
 from app.models.discount import Discount
@@ -14,6 +14,7 @@ __all__ = [
     "Customer",
     "Product",
     "Variant",
+    "ProductVariant",
     "Plan",
     "Subscription",
     "SubscriptionItem",

@@ -13,13 +13,13 @@ class Subscription(Base):
     customer_id = Column(Integer, ForeignKey("customers.id"), nullable=False, index=True)
     plan_id = Column(Integer, ForeignKey("plans.id"), nullable=False, index=True)
     
-    # Lifecycle: draft -> quotation -> confirmed -> active -> closed
-    status = Column(String(50), default="draft", nullable=False)
+    # Lifecycle: draft -> quotation -> confirmed -> active -> paused -> closed
+    status = Column(String(50), default="draft", nullable=False, index=True)
     
     start_date = Column(DateTime, nullable=False, default=datetime.utcnow)
     expiry_date = Column(DateTime, nullable=True)
     payment_terms = Column(String(100), default="Immediate", nullable=False)
-    next_billing_date = Column(DateTime, nullable=True)
+    next_billing_date = Column(DateTime, nullable=True, index=True)
     
     total_amount = Column(Numeric(12, 2, asdecimal=True), nullable=False, default=Decimal("0.00"))
     tax_rate = Column(Numeric(5, 2, asdecimal=True), nullable=False, default=Decimal("18.00"))
@@ -35,6 +35,15 @@ class Subscription(Base):
     plan = relationship("Plan", back_populates="subscriptions")
     items = relationship("SubscriptionItem", back_populates="subscription", cascade="all, delete-orphan")
     invoices = relationship("Invoice", back_populates="subscription")
+
+    # Compatibility properties for frontend naming
+    @property
+    def taxes(self):
+        return self.tax_amount
+
+    @property
+    def subtotal(self):
+        return max(Decimal("0.00"), self.total_amount - self.tax_amount)
 
     def __repr__(self):
         return f"<Subscription id={self.id} number={self.subscription_number} status={self.status}>"
@@ -55,6 +64,19 @@ class SubscriptionItem(Base):
     subscription = relationship("Subscription", back_populates="items")
     product = relationship("Product", back_populates="subscription_items")
     variant = relationship("Variant", back_populates="subscription_items")
+
+    # Compatibility properties for frontend naming
+    @property
+    def amount(self):
+        return self.total_price
+
+    @amount.setter
+    def amount(self, val):
+        self.total_price = val
+
+    @property
+    def subtotal(self):
+        return self.total_price
 
     def __repr__(self):
         return f"<SubscriptionItem id={self.id} sub_id={self.subscription_id} product_id={self.product_id} qty={self.quantity}>"

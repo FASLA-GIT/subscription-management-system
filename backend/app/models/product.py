@@ -45,5 +45,17 @@ class Variant(Base):
     subscription_items = relationship("SubscriptionItem", back_populates="variant")
     invoice_items = relationship("InvoiceItem", back_populates="variant")
 
+    @property
+    def name(self):
+        return self.variant_name
+
+    @name.setter
+    def name(self, val):
+        self.variant_name = val
+
     def __repr__(self):
         return f"<Variant id={self.id} product_id={self.product_id} name={self.variant_name} add_price={self.additional_price}>"
+
+
+# Compatibility alias
+ProductVariant = Variant
