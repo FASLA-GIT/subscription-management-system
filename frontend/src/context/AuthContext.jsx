@@ -5,25 +5,35 @@ const AuthContext = createContext(null);
 export const DEFAULT_USERS = {
   admin: {
     id: 1,
-    name: 'Aarav Sharma (Admin)',
+    name: 'Aarav Sharma',
     email: 'admin@brightloop.com',
     role: 'admin',
+    roleLabel: 'System Administrator',
+    title: 'Enterprise Billing Administrator',
     avatar: 'A',
+    homeRoute: '/app',
   },
   staff: {
     id: 2,
-    name: 'Priya Patel (Staff)',
+    name: 'Priya Patel',
     email: 'priya.staff@brightloop.com',
     role: 'internal_staff',
+    roleLabel: 'Operations Staff',
+    title: 'Customer & Billing Specialist',
     avatar: 'P',
+    homeRoute: '/app',
   },
   customer: {
     id: 3,
-    name: 'Rahul Verma (Acme Corp)',
+    name: 'Rahul Verma',
+    company: 'Acme Technologies Ltd',
     email: 'rahul@acmecorp.in',
     role: 'customer',
+    roleLabel: 'Customer Client',
+    title: 'Corporate Subscriber',
     customerId: 1,
     avatar: 'R',
+    homeRoute: '/app',
   },
 };
 
@@ -48,89 +58,95 @@ export function validatePassword(password) {
 }
 
 export function AuthProvider({ children }) {
+  // Use sessionStorage for demo mode session state
   const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('brightloop_user');
-    if (saved) {
-      try {
+    try {
+      const saved = sessionStorage.getItem('brightloop_demo_user');
+      if (saved) {
         return JSON.parse(saved);
-      } catch (e) {
-        // fallback
       }
+    } catch (e) {
+      // fallback
     }
-    // Default to admin for seamless hackathon development and testing
+    // Default to admin for immediate convenience in demo evaluations
     return DEFAULT_USERS.admin;
   });
 
   const [token, setToken] = useState(() => {
-    return localStorage.getItem('brightloop_token') || 'dummy-jwt-token-demo';
+    return sessionStorage.getItem('brightloop_demo_token') || 'demo-jwt-token';
   });
 
   useEffect(() => {
     if (user) {
-      localStorage.setItem('brightloop_user', JSON.stringify(user));
+      sessionStorage.setItem('brightloop_demo_user', JSON.stringify(user));
     } else {
-      localStorage.removeItem('brightloop_user');
+      sessionStorage.removeItem('brightloop_demo_user');
     }
   }, [user]);
 
   useEffect(() => {
     if (token) {
-      localStorage.setItem('brightloop_token', token);
+      sessionStorage.setItem('brightloop_demo_token', token);
     } else {
-      localStorage.removeItem('brightloop_token');
+      sessionStorage.removeItem('brightloop_demo_token');
     }
   }, [token]);
 
+  // Demo Sign-In
   const login = async (email, password) => {
-    // In a full run, calls Haaniah's backend POST /api/auth/login
-    // Here we support realistic auth with fallback
-    let matched = Object.values(DEFAULT_USERS).find(u => u.email.toLowerCase() === email.toLowerCase());
+    const cleanEmail = (email || '').trim().toLowerCase();
+
+    // Check matched predefined demo role
+    let matched = Object.values(DEFAULT_USERS).find(
+      u => u.email.toLowerCase() === cleanEmail
+    );
+
     if (!matched) {
-      // Create dynamically as customer or admin
+      // Dynamic fallback for custom email demo
+      const role = cleanEmail.includes('admin')
+        ? 'admin'
+        : cleanEmail.includes('staff')
+        ? 'internal_staff'
+        : 'customer';
+
       matched = {
         id: Date.now(),
         name: email.split('@')[0],
-        email,
-        role: email.includes('admin') ? 'admin' : (email.includes('staff') ? 'internal_staff' : 'customer'),
-        avatar: email.charAt(0).toUpperCase(),
+        email: cleanEmail,
+        role,
+        roleLabel: role === 'admin' ? 'Administrator' : role === 'internal_staff' ? 'Staff' : 'Customer',
+        title: 'Demo Session User',
+        avatar: (email.charAt(0) || 'U').toUpperCase(),
+        homeRoute: '/app',
       };
     }
+
     setUser(matched);
-    const mockToken = `jwt-${matched.role}-${Date.now()}`;
+    const mockToken = `demo-token-${matched.role}-${Date.now()}`;
     setToken(mockToken);
     return { success: true, user: matched };
   };
 
-  const register = async (name, email, password, role = 'customer') => {
-    const validation = validatePassword(password);
-    if (!validation.isValid) {
-      return { success: false, errors: validation.errors };
-    }
-
-    const newUser = {
-      id: Date.now(),
-      name,
-      email,
-      role: role === 'admin' ? 'admin' : (role === 'internal_staff' ? 'internal_staff' : 'customer'),
-      avatar: name.charAt(0).toUpperCase(),
-    };
-    setUser(newUser);
-    const mockToken = `jwt-${newUser.role}-${Date.now()}`;
-    setToken(mockToken);
-    return { success: true, user: newUser };
+  const loginAsRole = (roleKey) => {
+    const matched = DEFAULT_USERS[roleKey] || DEFAULT_USERS.admin;
+    setUser(matched);
+    setToken(`demo-token-${matched.role}-${Date.now()}`);
+    return matched;
   };
 
   const logout = () => {
     setUser(null);
     setToken(null);
-    localStorage.removeItem('brightloop_user');
-    localStorage.removeItem('brightloop_token');
+    sessionStorage.removeItem('brightloop_demo_user');
+    sessionStorage.removeItem('brightloop_demo_token');
   };
 
   const switchRole = (roleKey) => {
     if (DEFAULT_USERS[roleKey]) {
-      setUser(DEFAULT_USERS[roleKey]);
-      setToken(`jwt-${roleKey}-token`);
+      const newUser = DEFAULT_USERS[roleKey];
+      setUser(newUser);
+      setToken(`demo-token-${roleKey}-${Date.now()}`);
+      sessionStorage.setItem('brightloop_demo_user', JSON.stringify(newUser));
     }
   };
 
@@ -144,12 +160,13 @@ export function AuthProvider({ children }) {
         user,
         token,
         login,
-        register,
+        loginAsRole,
         logout,
         switchRole,
         isAdmin,
         isStaff,
         isCustomer,
+        DEFAULT_USERS,
       }}
     >
       {children}
@@ -164,4 +181,3 @@ export function useAuth() {
   }
   return context;
 }
-

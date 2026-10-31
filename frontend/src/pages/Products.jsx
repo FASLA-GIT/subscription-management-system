@@ -110,14 +110,14 @@ export default function Products() {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 font-sans">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+          <h1 className="text-2xl font-black text-[#111D35] tracking-tight">
             Products & Variants Catalog
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-xs text-[#64748B] mt-1">
             Define recurring software products, add-on modules and pricing tiers.
           </p>
         </div>
@@ -127,7 +127,7 @@ export default function Products() {
             type="button"
             onClick={() => setIsModalOpen(true)}
             aria-label="Create a new product"
-            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg bg-sky-600 hover:bg-sky-700 text-white shadow-sm transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl bg-[#1677F8] hover:bg-[#0A5CD6] text-white shadow-sm hover:shadow-[#1677F8]/25 transition-all active:scale-[0.98]"
           >
             <Plus className="w-4 h-4" aria-hidden="true" />
             <span>Add New Product</span>
@@ -136,28 +136,28 @@ export default function Products() {
       </div>
 
       {/* Filter Bar */}
-      <div className="flex flex-col sm:flex-row items-center gap-3 bg-white p-3.5 rounded-xl border border-slate-200">
+      <div className="flex flex-col sm:flex-row items-center gap-3 bg-white p-3.5 rounded-2xl border border-[#E2E8F0] shadow-card edge-lighting">
         <div className="relative flex-1 w-full">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" aria-hidden="true" />
+          <Search className="w-4 h-4 text-[#64748B] absolute left-3 top-1/2 -translate-y-1/2" aria-hidden="true" />
           <input
             type="text"
             placeholder="Search products by title or description..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             aria-label="Search products"
-            className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus-visible:ring-2 focus-visible:ring-sky-500"
+            className="w-full pl-9 pr-3 py-2 text-xs bg-[#F5F7FB] border border-[#E2E8F0] rounded-xl text-[#111D35] focus-visible:ring-2 focus-visible:ring-[#1677F8]"
           />
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <label htmlFor="type-filter" className="text-xs font-medium text-slate-600 whitespace-nowrap">
+          <label htmlFor="type-filter" className="text-xs font-semibold text-[#64748B] whitespace-nowrap">
             Filter by:
           </label>
           <select
             id="type-filter"
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
-            className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-medium text-slate-700 focus-visible:ring-2 focus-visible:ring-sky-500"
+            className="text-xs bg-[#F5F7FB] border border-[#E2E8F0] rounded-xl px-3 py-2 font-semibold text-[#111D35] focus-visible:ring-2 focus-visible:ring-[#1677F8]"
           >
             <option value="all">All Product Types</option>
             <option value="software">Software</option>

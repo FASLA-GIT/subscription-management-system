@@ -203,12 +203,12 @@ export default function Subscriptions() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 font-sans">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+          <h1 className="text-2xl font-black text-[#111D35] tracking-tight">
             {isCustomer ? 'My Subscriptions' : 'Customer Subscriptions'}
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-xs text-[#64748B] mt-1">
             Track subscription lifecycles from Draft and Quotation to Active renewal.
           </p>
         </div>
@@ -218,7 +218,7 @@ export default function Subscriptions() {
             type="button"
             onClick={() => setIsModalOpen(true)}
             aria-label="Create a new subscription"
-            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg bg-sky-600 hover:bg-sky-700 text-white shadow-sm transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl bg-[#1677F8] hover:bg-[#0A5CD6] text-white shadow-sm hover:shadow-[#1677F8]/25 transition-all active:scale-[0.98]"
           >
             <Plus className="w-4 h-4" aria-hidden="true" />
             <span>New Subscription</span>
@@ -227,28 +227,28 @@ export default function Subscriptions() {
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="flex flex-col sm:flex-row items-center gap-3 bg-white p-3.5 rounded-xl border border-slate-200">
+      <div className="flex flex-col sm:flex-row items-center gap-3 bg-white p-3.5 rounded-2xl border border-[#E2E8F0] shadow-card edge-lighting">
         <div className="relative flex-1 w-full">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" aria-hidden="true" />
+          <Search className="w-4 h-4 text-[#64748B] absolute left-3 top-1/2 -translate-y-1/2" aria-hidden="true" />
           <input
             type="text"
             placeholder="Search by subscription #, customer or plan..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             aria-label="Search subscriptions"
-            className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus-visible:ring-2 focus-visible:ring-sky-500"
+            className="w-full pl-9 pr-3 py-2 text-xs bg-[#F5F7FB] border border-[#E2E8F0] rounded-xl text-[#111D35] focus-visible:ring-2 focus-visible:ring-[#1677F8]"
           />
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <label htmlFor="status-filter" className="text-xs font-medium text-slate-600 whitespace-nowrap">
+          <label htmlFor="status-filter" className="text-xs font-semibold text-[#64748B] whitespace-nowrap">
             Status:
           </label>
           <select
             id="status-filter"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-medium text-slate-700 focus-visible:ring-2 focus-visible:ring-sky-500"
+            className="text-xs bg-[#F5F7FB] border border-[#E2E8F0] rounded-xl px-3 py-2 font-semibold text-[#111D35] focus-visible:ring-2 focus-visible:ring-[#1677F8]"
           >
             <option value="all">All Lifecycles</option>
             <option value="draft">Draft</option>
@@ -265,7 +265,7 @@ export default function Subscriptions() {
       <Card className="overflow-hidden p-0">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider font-semibold border-b border-slate-200">
+            <thead className="bg-[#F8FAFC] text-[#64748B] uppercase tracking-wider font-semibold border-b border-[#E2E8F0]">
               <tr>
                 <th scope="col" className="px-4 py-3">Subscription #</th>
                 <th scope="col" className="px-4 py-3">Customer</th>
@@ -276,23 +276,23 @@ export default function Subscriptions() {
                 <th scope="col" className="px-4 py-3 text-right">Lifecycle Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-[#E2E8F0]">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
+                  <td colSpan={7} className="px-4 py-8 text-center text-[#64748B]">
                     Loading subscriptions...
                   </td>
                 </tr>
               ) : filteredSubs.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
+                  <td colSpan={7} className="px-4 py-8 text-center text-[#64748B]">
                     No subscriptions matching your criteria.
                   </td>
                 </tr>
               ) : (
                 filteredSubs.map((sub) => (
-                  <tr key={sub.id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="px-4 py-3 font-bold text-sky-700">
+                  <tr key={sub.id} className="interactive-row transition-colors">
+                    <td className="px-4 py-3 font-bold text-[#1677F8]">
                       <button
                         type="button"
                         onClick={() => setSelectedSub(sub)}
@@ -301,19 +301,19 @@ export default function Subscriptions() {
                         {sub.subscription_number}
                       </button>
                     </td>
-                    <td className="px-4 py-3 font-semibold text-slate-800">
+                    <td className="px-4 py-3 font-semibold text-[#111D35]">
                       {sub.customer_name}
                     </td>
-                    <td className="px-4 py-3 text-slate-600">
-                      <span className="font-medium text-slate-900">{sub.plan_name}</span>
+                    <td className="px-4 py-3 text-[#64748B]">
+                      <span className="font-semibold text-[#111D35]">{sub.plan_name}</span>
                     </td>
-                    <td className="px-4 py-3 text-slate-600">
+                    <td className="px-4 py-3 text-[#64748B]">
                       <span className="inline-flex items-center gap-1">
-                        <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                        <Calendar className="w-3.5 h-3.5 text-[#1677F8]" />
                         {sub.next_billing_date}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-right font-bold text-slate-900">
+                    <td className="px-4 py-3 text-right font-black text-[#111D35]">
                       ₹{Number(sub.total_amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </td>
                     <td className="px-4 py-3 text-center">
@@ -324,7 +324,7 @@ export default function Subscriptions() {
                         <button
                           type="button"
                           onClick={() => setSelectedSub(sub)}
-                          className="px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100 rounded border border-slate-200"
+                          className="px-2.5 py-1 text-[11px] font-semibold text-[#111D35] hover:bg-[#F5F7FB] rounded-lg border border-[#E2E8F0] edge-lighting"
                         >
                           View Details
                         </button>
@@ -335,7 +335,7 @@ export default function Subscriptions() {
                               <button
                                 type="button"
                                 onClick={() => handleStatusChange(sub.id, 'quotation')}
-                                className="px-2 py-1 text-[11px] font-semibold text-purple-700 hover:bg-purple-50 rounded border border-purple-200"
+                                className="px-2.5 py-1 text-[11px] font-semibold text-purple-700 hover:bg-purple-50 rounded-lg border border-purple-200"
                               >
                                 Send Quote
                               </button>
@@ -345,7 +345,7 @@ export default function Subscriptions() {
                               <button
                                 type="button"
                                 onClick={() => handleStatusChange(sub.id, 'confirmed')}
-                                className="px-2 py-1 text-[11px] font-semibold text-blue-700 hover:bg-blue-50 rounded border border-blue-200"
+                                className="px-2.5 py-1 text-[11px] font-semibold text-[#1677F8] hover:bg-[#EAF3FF] rounded-lg border border-[#1677F8]/30"
                               >
                                 Confirm
                               </button>
@@ -355,7 +355,7 @@ export default function Subscriptions() {
                               <button
                                 type="button"
                                 onClick={() => handleStatusChange(sub.id, 'active')}
-                                className="px-2 py-1 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-50 rounded border border-emerald-300"
+                                className="px-2.5 py-1 text-[11px] font-bold text-[#059669] hover:bg-emerald-50 rounded-lg border border-emerald-300"
                               >
                                 Activate
                               </button>
@@ -377,7 +377,7 @@ export default function Subscriptions() {
                                 type="button"
                                 onClick={() => handleStatusChange(sub.id, 'active')}
                                 title="Resume subscription"
-                                className="p-1 text-emerald-600 hover:bg-emerald-50 rounded"
+                                className="p-1 text-[#059669] hover:bg-emerald-50 rounded"
                               >
                                 <PlayCircle className="w-4 h-4" />
                               </button>

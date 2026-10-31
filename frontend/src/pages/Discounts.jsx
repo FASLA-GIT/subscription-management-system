@@ -81,14 +81,14 @@ export default function Discounts() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 font-sans">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+          <h1 className="text-2xl font-black text-[#111D35] tracking-tight">
             Discount & Promotional Rules
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-xs text-[#64748B] mt-1">
             Configure percentage or fixed amount discounts with minimum thresholds and usage caps.
           </p>
         </div>
@@ -98,13 +98,13 @@ export default function Discounts() {
             type="button"
             onClick={() => setIsModalOpen(true)}
             aria-label="Create a new discount rule"
-            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg bg-sky-600 hover:bg-sky-700 text-white shadow-sm transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl bg-[#1677F8] hover:bg-[#0A5CD6] text-white shadow-sm hover:shadow-[#1677F8]/25 transition-all active:scale-[0.98]"
           >
             <Plus className="w-4 h-4" aria-hidden="true" />
             <span>Create Discount Rule</span>
           </button>
         ) : (
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-[#D97706] text-xs font-semibold">
             <ShieldAlert className="w-4 h-4" />
             <span>Admin-only configuration area</span>
           </div>
@@ -113,12 +113,12 @@ export default function Discounts() {
 
       {/* Discounts Grid */}
       {loading ? (
-        <div className="text-center py-12 text-sm text-slate-500">Loading discount rules...</div>
+        <div className="text-center py-12 text-xs font-semibold text-[#64748B]">Loading discount rules...</div>
       ) : discounts.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-xl border border-dashed border-slate-300 p-8">
+        <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-[#E2E8F0] p-8">
           <Percent className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-          <p className="text-sm font-semibold text-slate-700">No discount rules configured</p>
-          <p className="text-xs text-slate-500 mt-1">Admin can add discounts applicable to recurring invoices.</p>
+          <p className="text-sm font-bold text-[#111D35]">No discount rules configured</p>
+          <p className="text-xs text-[#64748B] mt-1">Admin can add discounts applicable to recurring invoices.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -128,58 +128,58 @@ export default function Discounts() {
             const isActive = disc.is_active && !isExpired && !isLimitReached;
 
             return (
-              <Card key={disc.id} className="flex flex-col justify-between hover:shadow-md transition-shadow">
+              <Card key={disc.id} className="flex flex-col justify-between hover:shadow-glow-sm">
                 <div className="space-y-3">
                   <div className="flex items-start justify-between">
                     <div>
-                      <span className="font-mono font-black text-sm px-2.5 py-1 rounded bg-slate-900 text-white tracking-wider">
+                      <span className="font-mono font-black text-xs px-2.5 py-1 rounded-lg bg-[#0B1426] text-white tracking-wider">
                         {disc.code}
                       </span>
-                      <h2 className="text-sm font-bold text-slate-900 mt-2">{disc.name}</h2>
+                      <h2 className="text-sm font-bold text-[#111D35] mt-2">{disc.name}</h2>
                     </div>
                     <div className="text-right">
-                      <p className="text-xl font-black text-sky-700">
+                      <p className="text-xl font-black text-[#1677F8]">
                         {disc.type === 'percentage' ? `${disc.value}% OFF` : `₹${disc.value} OFF`}
                       </p>
-                      <p className="text-[10px] text-slate-400">
+                      <p className="text-[10px] text-[#64748B]">
                         {disc.type === 'percentage' ? 'Percentage rule' : 'Fixed deduction'}
                       </p>
                     </div>
                   </div>
 
-                  <div className="space-y-1 text-xs text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-100">
-                    <p>Min Purchase: <strong className="text-slate-800">₹{disc.min_purchase}</strong></p>
-                    <p>Min Quantity: <strong className="text-slate-800">{disc.min_quantity} unit(s)</strong></p>
-                    <p className="flex items-center gap-1 text-[11px] text-slate-500 pt-1">
-                      <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                  <div className="space-y-1 text-xs text-[#64748B] bg-[#F5F7FB] p-3 rounded-xl border border-[#E2E8F0]">
+                    <p>Min Purchase: <strong className="text-[#111D35]">₹{disc.min_purchase}</strong></p>
+                    <p>Min Quantity: <strong className="text-[#111D35]">{disc.min_quantity} unit(s)</strong></p>
+                    <p className="flex items-center gap-1 text-[11px] text-[#64748B] pt-1">
+                      <Calendar className="w-3.5 h-3.5 text-[#1677F8]" />
                       Valid: {disc.start_date} to {disc.end_date}
                     </p>
                   </div>
 
                   {/* Usage tracker */}
                   <div>
-                    <div className="flex justify-between text-[11px] font-semibold text-slate-600 mb-1">
+                    <div className="flex justify-between text-[11px] font-semibold text-[#64748B] mb-1">
                       <span>Redemptions</span>
                       <span>{disc.times_used} / {disc.usage_limit} used</span>
                     </div>
-                    <div className="w-full h-2 rounded-full bg-slate-200 overflow-hidden">
+                    <div className="w-full h-2 rounded-full bg-[#E2E8F0] overflow-hidden">
                       <div 
-                        className={`h-full ${isLimitReached ? 'bg-rose-500' : 'bg-sky-600'}`}
+                        className={`h-full ${isLimitReached ? 'bg-[#DC2626]' : 'bg-[#1677F8]'}`}
                         style={{ width: `${Math.min(100, (disc.times_used / disc.usage_limit) * 100)}%` }}
                       />
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                  <span className="text-slate-400">Status:</span>
+                <div className="mt-4 pt-3 border-t border-[#E2E8F0] flex items-center justify-between text-xs">
+                  <span className="text-[#64748B]">Status:</span>
                   {isActive ? (
-                    <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
+                    <span className="inline-flex items-center gap-1 font-bold text-[#059669] bg-emerald-50 px-2 py-0.5 rounded-md">
                       <CheckCircle className="w-3.5 h-3.5" />
                       Active & Applying
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded">
+                    <span className="inline-flex items-center gap-1 font-bold text-[#DC2626] bg-rose-50 px-2 py-0.5 rounded-md">
                       <XCircle className="w-3.5 h-3.5" />
                       {isLimitReached ? 'Limit Reached' : isExpired ? 'Expired' : 'Inactive'}
                     </span>

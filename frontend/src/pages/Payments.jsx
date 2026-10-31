@@ -101,14 +101,14 @@ export default function Payments() {
   const totalCollected = payments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 font-sans">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+          <h1 className="text-2xl font-black text-[#111D35] tracking-tight">
             Payments & Collections
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-xs text-[#64748B] mt-1">
             Record customer settlements, track outstanding balances, and verify payment audits.
           </p>
         </div>
@@ -117,7 +117,7 @@ export default function Payments() {
           type="button"
           onClick={() => setIsModalOpen(true)}
           aria-label="Record a new payment transaction"
-          className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl bg-[#059669] hover:bg-emerald-700 text-white shadow-sm transition-all active:scale-[0.98]"
         >
           <Plus className="w-4 h-4" aria-hidden="true" />
           <span>Record Payment</span>
@@ -126,55 +126,55 @@ export default function Payments() {
 
       {/* KPI Overview */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card>
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+        <Card className="hover:shadow-glow-sm">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-[#64748B]">
             Total Payments Logged
           </p>
-          <p className="text-2xl font-black text-slate-900 mt-2">
+          <p className="text-2xl font-black text-[#111D35] mt-2">
             ₹{totalCollected.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
           </p>
-          <p className="text-xs text-emerald-600 font-semibold mt-1">
+          <p className="text-[11px] text-[#059669] font-semibold mt-1">
             {payments.length} settled transactions
           </p>
         </Card>
 
-        <Card>
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+        <Card className="hover:shadow-glow-sm">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-[#64748B]">
             Pending Receivable Invoices
           </p>
-          <p className="text-2xl font-black text-amber-600 mt-2">
+          <p className="text-2xl font-black text-[#D97706] mt-2">
             {pendingInvoices.length} Invoices
           </p>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-[11px] text-[#64748B] mt-1">
             Awaiting full or partial settlement
           </p>
         </Card>
 
-        <Card>
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+        <Card className="hover:shadow-glow-sm">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-[#64748B]">
             Audit Guarantee
           </p>
-          <p className="text-sm font-bold text-slate-800 mt-2 flex items-center gap-1.5">
-            <FileCheck className="w-4 h-4 text-emerald-600" />
+          <p className="text-sm font-bold text-[#111D35] mt-2 flex items-center gap-1.5">
+            <FileCheck className="w-4 h-4 text-[#059669]" />
             Accurate Non-floating Arithmetic
           </p>
-          <p className="text-[11px] text-slate-500 mt-1">
+          <p className="text-[11px] text-[#64748B] mt-1">
             Paise/Decimal precision prevents rounding errors
           </p>
         </Card>
       </div>
 
       {/* Search Bar */}
-      <div className="bg-white p-3.5 rounded-xl border border-slate-200">
+      <div className="bg-white p-3.5 rounded-2xl border border-[#E2E8F0] shadow-card edge-lighting">
         <div className="relative">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" aria-hidden="true" />
+          <Search className="w-4 h-4 text-[#64748B] absolute left-3 top-1/2 -translate-y-1/2" aria-hidden="true" />
           <input
             type="text"
             placeholder="Search payments by invoice #, customer, method or UTR..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             aria-label="Search payment records"
-            className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus-visible:ring-2 focus-visible:ring-sky-500"
+            className="w-full pl-9 pr-3 py-2 text-xs bg-[#F5F7FB] border border-[#E2E8F0] rounded-xl text-[#111D35] focus-visible:ring-2 focus-visible:ring-[#1677F8]"
           />
         </div>
       </div>
@@ -183,7 +183,7 @@ export default function Payments() {
       <Card className="overflow-hidden p-0">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider font-semibold border-b border-slate-200">
+            <thead className="bg-[#F8FAFC] text-[#64748B] uppercase tracking-wider font-semibold border-b border-[#E2E8F0]">
               <tr>
                 <th scope="col" className="px-4 py-3">Receipt ID</th>
                 <th scope="col" className="px-4 py-3">Invoice #</th>
@@ -194,43 +194,43 @@ export default function Payments() {
                 <th scope="col" className="px-4 py-3 text-right">Settled Amount</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-[#E2E8F0]">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
+                  <td colSpan={7} className="px-4 py-8 text-center text-[#64748B]">
                     Loading payments...
                   </td>
                 </tr>
               ) : filteredPayments.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
+                  <td colSpan={7} className="px-4 py-8 text-center text-[#64748B]">
                     No payment transactions recorded yet.
                   </td>
                 </tr>
               ) : (
                 filteredPayments.map((p) => (
-                  <tr key={p.id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="px-4 py-3 font-mono font-bold text-slate-700">
+                  <tr key={p.id} className="interactive-row transition-colors">
+                    <td className="px-4 py-3 font-mono font-bold text-[#111D35]">
                       REC-{String(p.id).slice(-4)}
                     </td>
-                    <td className="px-4 py-3 font-bold text-sky-700">
+                    <td className="px-4 py-3 font-bold text-[#1677F8]">
                       {p.invoice_number}
                     </td>
-                    <td className="px-4 py-3 font-medium text-slate-800">
+                    <td className="px-4 py-3 font-semibold text-[#111D35]">
                       {p.customer_name}
                     </td>
-                    <td className="px-4 py-3 text-slate-600">
-                      <span className="inline-block px-2 py-0.5 rounded bg-slate-100 font-medium text-[11px]">
+                    <td className="px-4 py-3 text-[#64748B]">
+                      <span className="inline-block px-2 py-0.5 rounded-md bg-[#F5F7FB] border border-[#E2E8F0] font-medium text-[11px] text-[#111D35]">
                         {p.payment_method}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-slate-600">
+                    <td className="px-4 py-3 text-[#64748B]">
                       {p.payment_date}
                     </td>
-                    <td className="px-4 py-3 text-slate-500 italic max-w-xs truncate">
+                    <td className="px-4 py-3 text-[#64748B] italic max-w-xs truncate">
                       {p.note || 'Direct settlement'}
                     </td>
-                    <td className="px-4 py-3 text-right font-black text-emerald-700">
+                    <td className="px-4 py-3 text-right font-black text-[#059669]">
                       +₹{Number(p.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </td>
                   </tr>

@@ -10,18 +10,18 @@ export default function Card({
 }) {
   return (
     <section 
-      className={`bg-white rounded-xl border border-slate-200/80 shadow-sm transition-all duration-150 ${className}`}
+      className={`bg-white rounded-2xl border border-[#E2E8F0] shadow-card edge-lighting ${className}`}
     >
       {(title || subtitle || actions) && (
-        <div className="px-5 py-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
+        <div className="px-5 py-4 border-b border-[#E2E8F0] flex flex-wrap items-center justify-between gap-3">
           <div>
             {title && (
-              <h2 className={`text-base font-semibold text-slate-900 ${titleClassName}`}>
+              <h2 className={`text-sm font-bold text-[#111D35] ${titleClassName}`}>
                 {title}
               </h2>
             )}
             {subtitle && (
-              <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>
+              <p className="text-xs text-[#64748B] mt-0.5">{subtitle}</p>
             )}
           </div>
           {actions && <div className="flex items-center gap-2">{actions}</div>}
@@ -31,4 +31,3 @@ export default function Card({
     </section>
   );
 }
-

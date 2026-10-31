@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 
 const AccessibilityContext = createContext(null);
 
@@ -13,13 +13,27 @@ export function AccessibilityProvider({ children }) {
     return localStorage.getItem('brightloop_text_size') || 'normal';
   });
 
-  // 3. Screen reader live announcement
+  // 3. Hover-to-speech settings
+  const [hoverToSpeech, setHoverToSpeech] = useState(() => {
+    const saved = localStorage.getItem('brightloop_hover_speech');
+    return saved !== null ? saved === 'true' : true; // Enabled by default for demonstration
+  });
+
+  const [speechRate, setSpeechRate] = useState(() => {
+    const saved = localStorage.getItem('brightloop_speech_rate');
+    return saved ? parseFloat(saved) : 1.0;
+  });
+
+  const [hoverDelay, setHoverDelay] = useState(600); // 600ms debounce
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const [announcement, setAnnouncement] = useState('');
 
-  // 4. Speech synthesis (Read Aloud)
-  const [isSpeaking, setIsSpeaking] = useState(false);
+  const isSpeechSupported = typeof window !== 'undefined' && 'speechSynthesis' in window;
 
-  // Apply high contrast class
+  const hoverTimerRef = useRef(null);
+  const lastSpokenElementRef = useRef(null);
+
+  // Apply high contrast class to html root
   useEffect(() => {
     const root = document.documentElement;
     if (highContrast) {
@@ -40,6 +54,15 @@ export function AccessibilityProvider({ children }) {
     localStorage.setItem('brightloop_text_size', textSize);
   }, [textSize]);
 
+  // Save speech settings
+  useEffect(() => {
+    localStorage.setItem('brightloop_hover_speech', hoverToSpeech.toString());
+  }, [hoverToSpeech]);
+
+  useEffect(() => {
+    localStorage.setItem('brightloop_speech_rate', speechRate.toString());
+  }, [speechRate]);
+
   const toggleHighContrast = useCallback(() => {
     setHighContrast(prev => {
       const next = !prev;
@@ -59,21 +82,21 @@ export function AccessibilityProvider({ children }) {
     return () => clearTimeout(timer);
   }, []);
 
-  // Web Speech API for Read-Aloud
-  const speak = useCallback((text) => {
-    if (!('speechSynthesis' in window)) {
-      announce('Text to speech is not supported in this browser.');
-      return;
+  const stopSpeaking = useCallback(() => {
+    if (isSpeechSupported) {
+      window.speechSynthesis.cancel();
     }
+    setIsSpeaking(false);
+  }, [isSpeechSupported]);
+
+  const speakText = useCallback((text) => {
+    if (!isSpeechSupported || !text) return;
+    const cleanText = text.trim();
+    if (!cleanText) return;
 
     window.speechSynthesis.cancel();
-    if (!text) {
-      setIsSpeaking(false);
-      return;
-    }
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.95; // slightly slower for better accessibility clarity
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.rate = speechRate;
     utterance.pitch = 1.0;
 
     utterance.onstart = () => setIsSpeaking(true);
@@ -81,16 +104,112 @@ export function AccessibilityProvider({ children }) {
     utterance.onerror = () => setIsSpeaking(false);
 
     window.speechSynthesis.speak(utterance);
-    announce('Reading text aloud');
-  }, [announce]);
+  }, [isSpeechSupported, speechRate]);
 
-  const stopSpeaking = useCallback(() => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
+  // Clean element text extraction: extracts readable short label
+  const extractReadableText = useCallback((el) => {
+    if (!el || el.nodeType !== Node.ELEMENT_NODE) return '';
+
+    // Ignore aria-hidden, scripts, svgs, or decorative containers
+    if (el.getAttribute('aria-hidden') === 'true' || el.tagName === 'svg' || el.tagName === 'path') {
+      return '';
     }
-    setIsSpeaking(false);
-    announce('Stopped reading');
-  }, [announce]);
+
+    // 1. Check aria-label
+    const ariaLabel = el.getAttribute('aria-label');
+    if (ariaLabel && ariaLabel.trim()) return ariaLabel.trim();
+
+    // 2. Check title attribute
+    const title = el.getAttribute('title');
+    if (title && title.trim()) return title.trim();
+
+    // 3. For buttons, headings, table cells, form labels, links
+    const clone = el.cloneNode(true);
+    // Remove svgs or icons inside clone
+    clone.querySelectorAll('svg, [aria-hidden="true"]').forEach(n => n.remove());
+
+    const text = clone.innerText || clone.textContent || '';
+    const trimmed = text.replace(/\s+/g, ' ').trim();
+
+    // Avoid reading very large blocks of text all at once
+    if (trimmed.length > 180) {
+      return trimmed.slice(0, 180) + '...';
+    }
+    return trimmed;
+  }, []);
+
+  // Global Hover-To-Speech Event Listener
+  useEffect(() => {
+    if (!hoverToSpeech || !isSpeechSupported) {
+      stopSpeaking();
+      return;
+    }
+
+    const handleMouseOver = (e) => {
+      const target = e.target;
+      if (!target || !(target instanceof HTMLElement)) return;
+
+      // Find closest relevant text element
+      const relevantEl = target.closest(
+        'button, a, h1, h2, h3, h4, h5, h6, th, td, label, [role="status"], [role="button"], [data-speech="true"], p'
+      );
+
+      if (!relevantEl || relevantEl === lastSpokenElementRef.current) {
+        return;
+      }
+
+      // Clear any pending timer
+      if (hoverTimerRef.current) {
+        clearTimeout(hoverTimerRef.current);
+        hoverTimerRef.current = null;
+      }
+
+      const text = extractReadableText(relevantEl);
+      if (!text || text.length < 2) return;
+
+      // Start hover debounce timer (500-700ms)
+      hoverTimerRef.current = setTimeout(() => {
+        lastSpokenElementRef.current = relevantEl;
+        speakText(text);
+      }, hoverDelay);
+    };
+
+    const handleMouseOut = (e) => {
+      const target = e.target;
+      if (hoverTimerRef.current) {
+        clearTimeout(hoverTimerRef.current);
+        hoverTimerRef.current = null;
+      }
+      if (lastSpokenElementRef.current === target) {
+        lastSpokenElementRef.current = null;
+      }
+    };
+
+    // Keyboard support: Alt + S reads current focused element
+    const handleKeyDown = (e) => {
+      if ((e.altKey && (e.key === 's' || e.key === 'S')) || (e.shiftKey && e.code === 'Space' && e.target !== document.body)) {
+        const active = document.activeElement;
+        if (active && active !== document.body) {
+          const text = extractReadableText(active);
+          if (text) {
+            e.preventDefault();
+            speakText(text);
+          }
+        }
+      }
+    };
+
+    document.addEventListener('mouseover', handleMouseOver);
+    document.addEventListener('mouseout', handleMouseOut);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('mouseover', handleMouseOver);
+      document.removeEventListener('mouseout', handleMouseOut);
+      document.removeEventListener('keydown', handleKeyDown);
+      if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+    };
+  }, [hoverToSpeech, isSpeechSupported, hoverDelay, extractReadableText, speakText, stopSpeaking]);
 
   return (
     <AccessibilityContext.Provider
@@ -99,10 +218,17 @@ export function AccessibilityProvider({ children }) {
         toggleHighContrast,
         textSize,
         changeTextSize,
-        announce,
-        speak,
-        stopSpeaking,
+        hoverToSpeech,
+        setHoverToSpeech,
+        speechRate,
+        setSpeechRate,
+        hoverDelay,
+        setHoverDelay,
+        isSpeechSupported,
         isSpeaking,
+        speakText,
+        stopSpeaking,
+        announce,
       }}
     >
       {/* Invisible live region for screen reader announcements */}
@@ -126,4 +252,3 @@ export function useAccessibility() {
   }
   return context;
 }
-

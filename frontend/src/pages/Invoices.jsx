@@ -115,12 +115,12 @@ export default function Invoices() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 font-sans">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+          <h1 className="text-2xl font-black text-[#111D35] tracking-tight">
             {isCustomer ? 'My Invoices & Billing Statements' : 'Invoices & Automated Billing Engine'}
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-xs text-[#64748B] mt-1">
             Automated recurring invoice generation, duplicate prevention, and balance tracking.
           </p>
         </div>
@@ -130,7 +130,7 @@ export default function Invoices() {
             type="button"
             onClick={handleGenerateDue}
             aria-label="Generate invoices for all due subscriptions with duplicate prevention"
-            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg bg-sky-600 hover:bg-sky-700 text-white shadow-sm transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl bg-[#1677F8] hover:bg-[#0A5CD6] text-white shadow-sm hover:shadow-[#1677F8]/25 transition-all active:scale-[0.98]"
           >
             <Zap className="w-4 h-4" aria-hidden="true" />
             <span>⚡ Generate Due Invoices</span>
@@ -142,16 +142,16 @@ export default function Invoices() {
       {billingNotice && (
         <div 
           role="alert" 
-          className="p-4 rounded-xl bg-sky-50 border border-sky-200 text-sky-900 text-sm flex items-center justify-between animate-in fade-in duration-200"
+          className="p-4 rounded-xl bg-[#EAF3FF] border border-[#1677F8]/20 text-[#111D35] text-xs flex items-center justify-between animate-in fade-in duration-200"
         >
           <div className="flex items-center gap-3">
-            <Zap className="w-5 h-5 text-sky-600 flex-shrink-0" />
-            <p className="font-medium">{billingNotice}</p>
+            <Zap className="w-5 h-5 text-[#1677F8] flex-shrink-0" />
+            <p className="font-semibold">{billingNotice}</p>
           </div>
           <button 
             type="button" 
             onClick={() => setBillingNotice('')}
-            className="text-xs font-semibold underline text-sky-700 hover:text-sky-900"
+            className="text-xs font-bold underline text-[#1677F8] hover:text-[#0A5CD6]"
           >
             Dismiss
           </button>
@@ -159,28 +159,28 @@ export default function Invoices() {
       )}
 
       {/* Filter and Search Bar */}
-      <div className="flex flex-col sm:flex-row items-center gap-3 bg-white p-3.5 rounded-xl border border-slate-200">
+      <div className="flex flex-col sm:flex-row items-center gap-3 bg-white p-3.5 rounded-2xl border border-[#E2E8F0] shadow-card edge-lighting">
         <div className="relative flex-1 w-full">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" aria-hidden="true" />
+          <Search className="w-4 h-4 text-[#64748B] absolute left-3 top-1/2 -translate-y-1/2" aria-hidden="true" />
           <input
             type="text"
             placeholder="Search by invoice #, customer name or subscription #..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             aria-label="Search invoices"
-            className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus-visible:ring-2 focus-visible:ring-sky-500"
+            className="w-full pl-9 pr-3 py-2 text-xs bg-[#F5F7FB] border border-[#E2E8F0] rounded-xl text-[#111D35] focus-visible:ring-2 focus-visible:ring-[#1677F8]"
           />
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <label htmlFor="inv-status-filter" className="text-xs font-medium text-slate-600 whitespace-nowrap">
+          <label htmlFor="inv-status-filter" className="text-xs font-semibold text-[#64748B] whitespace-nowrap">
             Status:
           </label>
           <select
             id="inv-status-filter"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-medium text-slate-700 focus-visible:ring-2 focus-visible:ring-sky-500"
+            className="text-xs bg-[#F5F7FB] border border-[#E2E8F0] rounded-xl px-3 py-2 font-semibold text-[#111D35] focus-visible:ring-2 focus-visible:ring-[#1677F8]"
           >
             <option value="all">All Invoices</option>
             <option value="confirmed">Confirmed</option>
@@ -195,7 +195,7 @@ export default function Invoices() {
       <Card className="overflow-hidden p-0">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider font-semibold border-b border-slate-200">
+            <thead className="bg-[#F8FAFC] text-[#64748B] uppercase tracking-wider font-semibold border-b border-[#E2E8F0]">
               <tr>
                 <th scope="col" className="px-4 py-3">Invoice #</th>
                 <th scope="col" className="px-4 py-3">Customer</th>
@@ -207,23 +207,23 @@ export default function Invoices() {
                 <th scope="col" className="px-4 py-3 text-right">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-[#E2E8F0]">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-slate-500">
+                  <td colSpan={8} className="px-4 py-8 text-center text-[#64748B]">
                     Loading invoices...
                   </td>
                 </tr>
               ) : filteredInvoices.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-slate-500">
+                  <td colSpan={8} className="px-4 py-8 text-center text-[#64748B]">
                     No invoices found.
                   </td>
                 </tr>
               ) : (
                 filteredInvoices.map((inv) => (
-                  <tr key={inv.id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="px-4 py-3 font-bold text-sky-700">
+                  <tr key={inv.id} className="interactive-row transition-colors">
+                    <td className="px-4 py-3 font-bold text-[#1677F8]">
                       <button
                         type="button"
                         onClick={() => setSelectedInvoice(inv)}
@@ -233,25 +233,25 @@ export default function Invoices() {
                       </button>
                     </td>
                     <td className="px-4 py-3">
-                      <p className="font-semibold text-slate-800">{inv.customer_name}</p>
-                      <p className="text-[10px] text-slate-400">{inv.subscription_number}</p>
+                      <p className="font-semibold text-[#111D35]">{inv.customer_name}</p>
+                      <p className="text-[10px] text-[#64748B]">{inv.subscription_number}</p>
                     </td>
-                    <td className="px-4 py-3 text-slate-600">
+                    <td className="px-4 py-3 text-[#64748B]">
                       {inv.billing_period_start} to {inv.billing_period_end}
                     </td>
-                    <td className="px-4 py-3 text-slate-600 font-medium">
+                    <td className="px-4 py-3 text-[#64748B] font-medium">
                       {inv.due_date}
                     </td>
-                    <td className="px-4 py-3 text-right font-bold text-slate-900">
+                    <td className="px-4 py-3 text-right font-black text-[#111D35]">
                       ₹{Number(inv.final_amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </td>
                     <td className="px-4 py-3 text-right font-black">
                       {inv.outstanding_amount > 0 ? (
-                        <span className="text-amber-700">
+                        <span className="text-[#D97706]">
                           ₹{Number(inv.outstanding_amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                         </span>
                       ) : (
-                        <span className="text-emerald-700">₹0.00</span>
+                        <span className="text-[#059669]">₹0.00</span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-center">
@@ -262,7 +262,7 @@ export default function Invoices() {
                         <button
                           type="button"
                           onClick={() => setSelectedInvoice(inv)}
-                          className="px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100 rounded border border-slate-200"
+                          className="px-2.5 py-1 text-[11px] font-semibold text-[#111D35] hover:bg-[#F5F7FB] rounded-lg border border-[#E2E8F0] edge-lighting"
                         >
                           View
                         </button>
@@ -270,7 +270,7 @@ export default function Invoices() {
                           <button
                             type="button"
                             onClick={() => handleOpenPayment(inv)}
-                            className="px-2.5 py-1 text-[11px] font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded shadow-2xs"
+                            className="px-2.5 py-1 text-[11px] font-bold text-white bg-[#059669] hover:bg-emerald-700 rounded-lg shadow-2xs"
                           >
                             Pay
                           </button>

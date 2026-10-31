@@ -10,7 +10,10 @@ import {
   Zap, 
   CreditCard, 
   ArrowUpRight, 
-  Volume2 
+  Calendar, 
+  ArrowRight, 
+  CheckCircle2, 
+  Layers 
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -25,19 +28,18 @@ import {
   Cell, 
   Legend 
 } from 'recharts';
-import { DashboardService, InvoiceService } from '../services/api';
-import { useAccessibility } from '../context/AccessibilityContext';
+import { DashboardService, InvoiceService, SubscriptionService, PaymentService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import Card from '../components/common/Card';
 import StatusBadge from '../components/common/StatusBadge';
 
 export default function Dashboard() {
-  const { speak } = useAccessibility();
-  const { isCustomer } = useAuth();
+  const { user, isCustomer, isAdmin, isStaff } = useAuth();
   const [summary, setSummary] = useState(null);
   const [revenueData, setRevenueData] = useState([]);
   const [planDistribution, setPlanDistribution] = useState([]);
   const [recentInvoices, setRecentInvoices] = useState([]);
+  const [subscriptions, setSubscriptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [billingNotice, setBillingNotice] = useState('');
 
@@ -45,16 +47,18 @@ export default function Dashboard() {
     async function loadData() {
       try {
         setLoading(true);
-        const [sum, rev, plans, invs] = await Promise.all([
+        const [sum, rev, plans, invs, subs] = await Promise.all([
           DashboardService.getSummary(),
           DashboardService.getRevenueChart(),
           DashboardService.getPlanDistribution(),
           InvoiceService.getAll(),
+          SubscriptionService.getAll(),
         ]);
         setSummary(sum);
         setRevenueData(rev);
         setPlanDistribution(plans);
         setRecentInvoices(invs.slice(0, 5));
+        setSubscriptions(subs);
       } catch (err) {
         console.error('Failed to load dashboard metrics', err);
       } finally {
@@ -76,205 +80,218 @@ export default function Dashboard() {
     setTimeout(() => setBillingNotice(''), 6000);
   };
 
-  const handleReadSummaryAloud = () => {
-    if (!summary) return;
-    const text = `Brightloop Dashboard Summary: You have ${summary.active_subscriptions} active subscriptions. Total revenue received is ₹${summary.total_revenue.toLocaleString('en-IN')}. Outstanding balance is ₹${summary.outstanding_amount.toLocaleString('en-IN')}. There are ${summary.overdue_invoices} overdue invoices requiring immediate attention.`;
-    speak(text);
-  };
+  const COLORS = ['#1677F8', '#6366F1', '#059669', '#D97706'];
 
-  const COLORS = ['#0284c7', '#6366f1', '#10b981', '#f59e0b'];
+  // Upcoming renewals calculation
+  const upcomingRenewals = subscriptions
+    .filter(s => s.status === 'active')
+    .slice(0, 3);
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-4 border-sky-600 border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm font-medium text-slate-600">Loading dashboard data...</p>
+          <div className="w-8 h-8 border-3 border-[#1677F8] border-t-transparent rounded-full animate-spin" />
+          <p className="text-xs font-semibold text-[#64748B]">Loading workspace intelligence...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Page Header */}
+    <div className="space-y-6 font-sans">
+      {/* 1. Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">
-            {isCustomer ? 'Customer Billing Dashboard' : 'Subscription & Financial Dashboard'}
+          <h1 className="text-2xl font-black text-[#111D35] tracking-tight">
+            {isCustomer ? 'Subscriber Financial Portal' : 'Subscription & Financial Dashboard'}
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Real-time subscription lifecycles, automated billing and revenue intelligence.
+          <p className="text-xs text-[#64748B] mt-1">
+            {isCustomer 
+              ? `Welcome back, ${user?.name}. Manage your enterprise subscriptions, invoices, and settlements.`
+              : 'Real-time subscription lifecycles, automated billing pipelines, and revenue velocity.'}
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
-          <button
-            type="button"
-            onClick={handleReadSummaryAloud}
-            aria-label="Listen to dashboard summary statistics"
-            className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 shadow-2xs transition-colors"
-          >
-            <Volume2 className="w-4 h-4 text-sky-600" aria-hidden="true" />
-            <span>Read Summary</span>
-          </button>
-
-          {!isCustomer && (
-            <button
-              type="button"
-              onClick={handleGenerateInvoices}
-              aria-label="Trigger automated invoice generation for all due subscriptions"
-              className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg bg-sky-600 hover:bg-sky-700 text-white shadow-sm transition-colors"
+          {!isCustomer ? (
+            <>
+              <Link
+                to="/app/subscriptions"
+                className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-xl border border-[#E2E8F0] bg-white hover:bg-[#F5F7FB] text-[#111D35] shadow-xs edge-lighting transition-all"
+              >
+                <Plus className="w-4 h-4 text-[#1677F8]" aria-hidden="true" />
+                <span>New Subscription</span>
+              </Link>
+              <button
+                type="button"
+                onClick={handleGenerateInvoices}
+                aria-label="Generate due invoices automatically"
+                className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl bg-[#1677F8] hover:bg-[#0A5CD6] text-white shadow-sm hover:shadow-[#1677F8]/25 transition-all active:scale-[0.98]"
+              >
+                <Zap className="w-4 h-4" aria-hidden="true" />
+                <span>⚡ Generate Due Invoices</span>
+              </button>
+            </>
+          ) : (
+            <Link
+              to="/app/payments"
+              className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl bg-[#059669] hover:bg-emerald-700 text-white shadow-sm transition-all"
             >
-              <Zap className="w-4 h-4" aria-hidden="true" />
-              <span>Generate Due Invoices</span>
-            </button>
+              <CreditCard className="w-4 h-4" />
+              <span>Settle Invoices</span>
+            </Link>
           )}
         </div>
       </div>
 
-      {/* Billing Generation Alert / Notice */}
+      {/* 2. Billing Generation Notice Banner */}
       {billingNotice && (
         <div 
           role="alert" 
-          className="p-4 rounded-xl bg-sky-50 border border-sky-200 text-sky-900 text-sm flex items-center justify-between animate-in fade-in duration-200"
+          className="p-4 rounded-xl bg-[#EAF3FF] border border-[#1677F8]/20 text-[#111D35] text-xs flex items-center justify-between animate-in fade-in duration-200"
         >
           <div className="flex items-center gap-3">
-            <Zap className="w-5 h-5 text-sky-600 flex-shrink-0" />
-            <p className="font-medium">{billingNotice}</p>
+            <Zap className="w-5 h-5 text-[#1677F8] flex-shrink-0" />
+            <p className="font-semibold">{billingNotice}</p>
           </div>
           <button 
             type="button" 
             onClick={() => setBillingNotice('')}
-            className="text-xs font-semibold underline text-sky-700 hover:text-sky-900"
+            className="text-xs font-bold underline text-[#1677F8] hover:text-[#0A5CD6]"
           >
             Dismiss
           </button>
         </div>
       )}
 
-      {/* KPI Cards Grid */}
+      {/* 3. KPI Cards Grid with Subtle Hover Edge Lighting */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Active Subscriptions */}
-        <Card className="hover:shadow-md transition-shadow">
+        <Card className="hover:shadow-glow-sm">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#64748B]">
               Active Subscriptions
             </p>
-            <div className="w-8 h-8 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-[#EAF3FF] text-[#1677F8] flex items-center justify-center">
               <Repeat className="w-4 h-4" aria-hidden="true" />
             </div>
           </div>
-          <p className="text-2xl font-black text-slate-900 mt-2">
+          <p className="text-2xl font-black text-[#111D35] mt-2">
             {summary?.active_subscriptions || 0}
           </p>
-          <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-semibold mt-1">
+          <div className="flex items-center gap-1.5 text-[11px] text-[#059669] font-semibold mt-1">
             <TrendingUp className="w-3.5 h-3.5" />
             <span>Recurring monthly cycles</span>
           </div>
         </Card>
 
         {/* Revenue Collected */}
-        <Card className="hover:shadow-md transition-shadow">
+        <Card className="hover:shadow-glow-sm">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-              Revenue Received
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#64748B]">
+              Revenue Collected
             </p>
-            <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-[#059669] flex items-center justify-center">
               <DollarSign className="w-4 h-4" aria-hidden="true" />
             </div>
           </div>
-          <p className="text-2xl font-black text-slate-900 mt-2">
+          <p className="text-2xl font-black text-[#111D35] mt-2">
             ₹{Number(summary?.total_revenue || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
           </p>
-          <p className="text-xs text-slate-500 mt-1">
-            Total settled payments
+          <p className="text-[11px] text-[#64748B] mt-1">
+            Audited settled payments
           </p>
         </Card>
 
-        {/* Outstanding Amount */}
-        <Card className="hover:shadow-md transition-shadow">
+        {/* Outstanding Receivables */}
+        <Card className="hover:shadow-glow-sm">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-              Outstanding Amount
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#64748B]">
+              Outstanding Receivables
             </p>
-            <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-amber-50 text-[#D97706] flex items-center justify-center">
               <Clock className="w-4 h-4" aria-hidden="true" />
             </div>
           </div>
-          <p className="text-2xl font-black text-slate-900 mt-2">
+          <p className="text-2xl font-black text-[#111D35] mt-2">
             ₹{Number(summary?.outstanding_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
           </p>
-          <p className="text-xs text-slate-500 mt-1">
-            Pending receivables
+          <p className="text-[11px] text-[#64748B] mt-1">
+            Awaiting customer payment
           </p>
         </Card>
 
         {/* Overdue Invoices */}
-        <Card className="hover:shadow-md transition-shadow">
+        <Card className="hover:shadow-glow-sm">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#64748B]">
               Overdue Invoices
             </p>
-            <div className="w-8 h-8 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-rose-50 text-[#DC2626] flex items-center justify-center">
               <AlertTriangle className="w-4 h-4" aria-hidden="true" />
             </div>
           </div>
-          <p className="text-2xl font-black text-rose-600 mt-2">
+          <p className="text-2xl font-black text-[#DC2626] mt-2">
             {summary?.overdue_invoices || 0}
           </p>
-          <p className="text-xs text-rose-600/80 font-medium mt-1">
+          <p className="text-[11px] text-[#DC2626]/80 font-medium mt-1">
             Requires payment follow-up
           </p>
         </Card>
       </div>
 
-      {/* Visual Charts Grid */}
+      {/* 4. Visual Analytics: Revenue Velocity & Active Plan Distribution */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Revenue Trend Area Chart */}
+        {/* Revenue Velocity Area Chart */}
         <Card 
-          title="Revenue Growth & Invoicing Trends" 
-          subtitle="Monthly revenue collection vs billing volume"
+          title="Revenue Growth & Billing Trends" 
+          subtitle="Monthly revenue collection trajectory across subscription accounts"
           className="lg:col-span-2"
         >
-          <div className="h-72 w-full pt-4">
+          <div className="h-72 w-full pt-3">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={revenueData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+              <AreaChart data={revenueData} margin={{ top: 10, right: 15, left: 0, bottom: 0 }}>
                 <defs>
-                  <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#0284c7" stopOpacity={0.4}/>
-                    <stop offset="95%" stopColor="#0284c7" stopOpacity={0.0}/>
+                  <linearGradient id="dashRev" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#1677F8" stopOpacity={0.35}/>
+                    <stop offset="95%" stopColor="#1677F8" stopOpacity={0.0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                <XAxis dataKey="month" stroke="#64748b" fontSize={12} tickLine={false} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                <XAxis dataKey="month" stroke="#64748B" fontSize={11} tickLine={false} />
                 <YAxis 
-                  stroke="#64748b" 
-                  fontSize={12} 
+                  stroke="#64748B" 
+                  fontSize={11} 
                   tickLine={false} 
                   tickFormatter={(val) => `₹${val / 1000}k`} 
                 />
                 <Tooltip 
                   formatter={(val) => [`₹${Number(val).toLocaleString('en-IN')}`, 'Revenue']}
-                  contentStyle={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0', borderRadius: '0.5rem', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
+                  contentStyle={{ 
+                    backgroundColor: '#FFFFFF', 
+                    borderColor: '#E2E8F0', 
+                    borderRadius: '0.75rem', 
+                    boxShadow: '0 4px 12px -2px rgba(11,20,38,0.1)' 
+                  }}
                 />
                 <Area 
                   type="monotone" 
                   dataKey="revenue" 
-                  stroke="#0284c7" 
+                  stroke="#1677F8" 
                   strokeWidth={2.5} 
                   fillOpacity={1} 
-                  fill="url(#colorRev)" 
+                  fill="url(#dashRev)" 
                 />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </Card>
 
-        {/* Subscription Plan Distribution Pie Chart */}
+        {/* Plan Distribution Donut Chart */}
         <Card 
           title="Active Plan Distribution" 
-          subtitle="Subscriptions broken down by billing tier"
+          subtitle="Customer subscription breakdown by tier"
         >
           <div className="h-72 w-full flex items-center justify-center">
             <ResponsiveContainer width="100%" height="100%">
@@ -306,25 +323,26 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* Recent Invoices & Quick Actions */}
+      {/* 5. Recent Invoices & Upcoming Renewals */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Recent Invoices Table */}
         <Card 
           title="Recent Invoices" 
-          subtitle="Latest billing records generated" 
+          subtitle="Latest automated billing statements generated" 
           className="lg:col-span-2"
           actions={
             <Link 
-              to="/invoices" 
-              className="text-xs font-semibold text-sky-600 hover:text-sky-700 flex items-center gap-1"
+              to="/app/invoices" 
+              className="text-xs font-bold text-[#1677F8] hover:text-[#0A5CD6] flex items-center gap-1"
             >
-              View All Invoices
+              <span>View All</span>
               <ArrowUpRight className="w-3.5 h-3.5" />
             </Link>
           }
         >
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider font-semibold border-b border-slate-200">
+              <thead className="bg-[#F8FAFC] text-[#64748B] uppercase tracking-wider font-semibold border-b border-[#E2E8F0]">
                 <tr>
                   <th scope="col" className="px-3 py-2.5">Invoice #</th>
                   <th scope="col" className="px-3 py-2.5">Customer</th>
@@ -334,20 +352,20 @@ export default function Dashboard() {
                   <th scope="col" className="px-3 py-2.5 text-center">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-[#E2E8F0]">
                 {recentInvoices.map((inv) => (
-                  <tr key={inv.id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="px-3 py-3 font-semibold text-sky-700">
-                      <Link to={`/invoices?id=${inv.id}`} className="hover:underline">
+                  <tr key={inv.id} className="interactive-row transition-colors">
+                    <td className="px-3 py-3 font-bold text-[#1677F8]">
+                      <Link to={`/app/invoices?id=${inv.id}`} className="hover:underline">
                         {inv.invoice_number}
                       </Link>
                     </td>
-                    <td className="px-3 py-3 font-medium text-slate-800">{inv.customer_name}</td>
-                    <td className="px-3 py-3 text-slate-600">{inv.due_date}</td>
-                    <td className="px-3 py-3 text-right font-semibold text-slate-900">
+                    <td className="px-3 py-3 font-semibold text-[#111D35]">{inv.customer_name}</td>
+                    <td className="px-3 py-3 text-[#64748B]">{inv.due_date}</td>
+                    <td className="px-3 py-3 text-right font-bold text-[#111D35]">
                       ₹{inv.final_amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </td>
-                    <td className="px-3 py-3 text-right font-medium text-slate-700">
+                    <td className="px-3 py-3 text-right font-semibold text-amber-700">
                       ₹{inv.outstanding_amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </td>
                     <td className="px-3 py-3 text-center">
@@ -360,55 +378,36 @@ export default function Dashboard() {
           </div>
         </Card>
 
-        {/* Quick Operations Guide */}
-        <Card title="Quick Actions & Workflow" subtitle="Perform core subscription operations">
+        {/* Upcoming Renewals Card */}
+        <Card title="Upcoming Renewals" subtitle="Subscriptions approaching next billing cadence">
           <div className="space-y-3">
-            <Link
-              to="/subscriptions"
-              className="w-full flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:border-sky-300 hover:bg-sky-50/50 transition-all group"
-            >
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-sky-100 text-sky-700">
-                  <Plus className="w-4 h-4" />
+            {upcomingRenewals.map(sub => (
+              <div 
+                key={sub.id} 
+                className="p-3 rounded-xl border border-[#E2E8F0] hover:border-[#1677F8]/40 hover:bg-[#EAF3FF]/30 transition-all edge-lighting text-xs"
+              >
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="font-bold text-[#111D35]">{sub.customer_name}</p>
+                    <p className="text-[11px] text-[#64748B]">{sub.plan_name}</p>
+                  </div>
+                  <span className="font-bold text-[#1677F8]">
+                    ₹{Number(sub.total_amount).toLocaleString('en-IN')}
+                  </span>
                 </div>
-                <div className="text-left">
-                  <p className="text-xs font-bold text-slate-900">Create New Subscription</p>
-                  <p className="text-[11px] text-slate-500">Assign customer, plan, and products</p>
+                <div className="flex items-center gap-1.5 text-[10px] text-[#64748B] mt-2 pt-2 border-t border-[#E2E8F0]">
+                  <Calendar className="w-3.5 h-3.5 text-[#1677F8]" />
+                  <span>Next Billing: <strong className="text-[#111D35]">{sub.next_billing_date}</strong></span>
                 </div>
               </div>
-              <ArrowUpRight className="w-4 h-4 text-slate-400 group-hover:text-sky-600 transition-colors" />
-            </Link>
+            ))}
 
             <Link
-              to="/payments"
-              className="w-full flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/50 transition-all group"
+              to="/app/subscriptions"
+              className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-bold text-[#1677F8] hover:bg-[#EAF3FF] rounded-xl transition-colors border border-transparent hover:border-[#1677F8]/20"
             >
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-emerald-100 text-emerald-700">
-                  <CreditCard className="w-4 h-4" />
-                </div>
-                <div className="text-left">
-                  <p className="text-xs font-bold text-slate-900">Record Customer Payment</p>
-                  <p className="text-[11px] text-slate-500">Settle full or partial invoice balance</p>
-                </div>
-              </div>
-              <ArrowUpRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-600 transition-colors" />
-            </Link>
-
-            <Link
-              to="/products"
-              className="w-full flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50 transition-all group"
-            >
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-indigo-100 text-indigo-700">
-                  <Zap className="w-4 h-4" />
-                </div>
-                <div className="text-left">
-                  <p className="text-xs font-bold text-slate-900">Manage Products & Variants</p>
-                  <p className="text-[11px] text-slate-500">Configure catalog and add-on pricing</p>
-                </div>
-              </div>
-              <ArrowUpRight className="w-4 h-4 text-slate-400 group-hover:text-indigo-600 transition-colors" />
+              <span>Manage Subscriptions</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
         </Card>
@@ -416,4 +415,3 @@ export default function Dashboard() {
     </div>
   );
 }
-

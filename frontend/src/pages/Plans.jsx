@@ -88,14 +88,14 @@ export default function Plans() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 font-sans">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+          <h1 className="text-2xl font-black text-[#111D35] tracking-tight">
             Subscription Plan Management
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-xs text-[#64748B] mt-1">
             Configure recurring billing cadences, pause/renewal policies, and lifecycle rules.
           </p>
         </div>
@@ -105,7 +105,7 @@ export default function Plans() {
             type="button"
             onClick={() => setIsModalOpen(true)}
             aria-label="Create a new subscription plan"
-            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg bg-sky-600 hover:bg-sky-700 text-white shadow-sm transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl bg-[#1677F8] hover:bg-[#0A5CD6] text-white shadow-sm hover:shadow-[#1677F8]/25 transition-all active:scale-[0.98]"
           >
             <Plus className="w-4 h-4" aria-hidden="true" />
             <span>Create New Plan</span>
@@ -115,40 +115,40 @@ export default function Plans() {
 
       {/* Plans Grid */}
       {loading ? (
-        <div className="text-center py-12 text-sm text-slate-500">Loading plans...</div>
+        <div className="text-center py-12 text-xs font-semibold text-[#64748B]">Loading plans...</div>
       ) : plans.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-xl border border-dashed border-slate-300 p-8">
+        <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-[#E2E8F0] p-8">
           <Layers className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-          <p className="text-sm font-semibold text-slate-700">No subscription plans available</p>
-          <p className="text-xs text-slate-500 mt-1">Click 'Create New Plan' to define billing frequencies.</p>
+          <p className="text-sm font-bold text-[#111D35]">No subscription plans available</p>
+          <p className="text-xs text-[#64748B] mt-1">Click 'Create New Plan' to define billing frequencies.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {plans.map((plan) => (
-            <Card key={plan.id} className="flex flex-col justify-between hover:shadow-md transition-shadow relative overflow-hidden">
+            <Card key={plan.id} className="flex flex-col justify-between hover:shadow-glow-sm relative overflow-hidden">
               <div className="space-y-4">
                 <div className="flex items-start justify-between">
                   <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${frequencyBadges[plan.billing_frequency] || 'bg-slate-100 text-slate-800'}`}>
                     {plan.billing_frequency}
                   </span>
                   <div className="text-right">
-                    <p className="text-2xl font-black text-slate-900">
+                    <p className="text-2xl font-black text-[#111D35]">
                       ₹{Number(plan.price).toLocaleString('en-IN')}
                     </p>
-                    <p className="text-[10px] text-slate-400">per {plan.billing_frequency}</p>
+                    <p className="text-[10px] text-[#64748B]">per {plan.billing_frequency}</p>
                   </div>
                 </div>
 
                 <div>
-                  <h2 className="text-lg font-bold text-slate-900">{plan.name}</h2>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Min Quantity: <span className="font-semibold text-slate-700">{plan.min_quantity} seat(s)</span>
+                  <h2 className="text-base font-bold text-[#111D35]">{plan.name}</h2>
+                  <p className="text-xs text-[#64748B] mt-0.5">
+                    Min Quantity: <span className="font-semibold text-[#111D35]">{plan.min_quantity} seat(s)</span>
                   </p>
                 </div>
 
                 {/* Validity Period */}
-                <div className="flex items-center gap-2 text-xs text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-                  <Calendar className="w-4 h-4 text-sky-600 flex-shrink-0" />
+                <div className="flex items-center gap-2 text-xs text-[#64748B] bg-[#F5F7FB] p-2.5 rounded-xl border border-[#E2E8F0]">
+                  <Calendar className="w-4 h-4 text-[#1677F8] flex-shrink-0" />
                   <span>Valid: {plan.start_date} to {plan.end_date}</span>
                 </div>
 

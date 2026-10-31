@@ -82,14 +82,14 @@ export default function Customers() {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 font-sans">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+          <h1 className="text-2xl font-black text-[#111D35] tracking-tight">
             Customer Directory & Accounts
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-xs text-[#64748B] mt-1">
             Manage subscriber companies, primary contacts, billing addresses and GST details.
           </p>
         </div>
@@ -99,7 +99,7 @@ export default function Customers() {
             type="button"
             onClick={() => setIsModalOpen(true)}
             aria-label="Add new customer account"
-            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg bg-sky-600 hover:bg-sky-700 text-white shadow-sm transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl bg-[#1677F8] hover:bg-[#0A5CD6] text-white shadow-sm hover:shadow-[#1677F8]/25 transition-all active:scale-[0.98]"
           >
             <Plus className="w-4 h-4" aria-hidden="true" />
             <span>Register Customer</span>
@@ -108,25 +108,25 @@ export default function Customers() {
       </div>
 
       {/* Search Bar */}
-      <div className="bg-white p-3.5 rounded-xl border border-slate-200">
+      <div className="bg-white p-3.5 rounded-2xl border border-[#E2E8F0] shadow-card edge-lighting">
         <div className="relative">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" aria-hidden="true" />
+          <Search className="w-4 h-4 text-[#64748B] absolute left-3 top-1/2 -translate-y-1/2" aria-hidden="true" />
           <input
             type="text"
             placeholder="Search customers by company name, contact, email or GSTIN..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             aria-label="Search customers"
-            className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus-visible:ring-2 focus-visible:ring-sky-500"
+            className="w-full pl-9 pr-3 py-2 text-xs bg-[#F5F7FB] border border-[#E2E8F0] rounded-xl text-[#111D35] focus-visible:ring-2 focus-visible:ring-[#1677F8]"
           />
         </div>
       </div>
 
       {/* Customers Grid */}
       {loading ? (
-        <div className="text-center py-12 text-sm text-slate-500">Loading customers...</div>
+        <div className="text-center py-12 text-xs font-semibold text-[#64748B]">Loading customers...</div>
       ) : filteredCustomers.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-xl border border-dashed border-slate-300 p-8">
+        <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-[#E2E8F0] p-8">
           <Users className="w-10 h-10 text-slate-300 mx-auto mb-2" />
           <p className="text-sm font-semibold text-slate-700">No customer records found</p>
           <p className="text-xs text-slate-500 mt-1">Click 'Register Customer' to add a client profile.</p>
